@@ -336,11 +336,14 @@ void parse_options (int argc, char** argv) try
   arg = menu.add (config->plfb_nchan, "plfb_nchan", "nchan");
   arg->set_help ("set channel fanout for phase-locked filterbank");
 
-  arg = menu.add (config->plfb_nchan, "plfb_nchan", "nchan");
-  arg->set_help ("set channel fanout for phase-locked filterbank");
-
-  arg = menu.add (config->zooms, 'z', "freq[,bw=1 MHz,chan_bw=0.002 MHz]");
-  arg->set_help ("output spectra zoomed ");
+  arg = menu.add (config->zooms, 'z', "freq[,bw,chan_bw]");
+  arg->set_help ("output zoomed spectrum (units MHz)");
+  arg->set_long_help
+    ("specify one or more zoom bands within the primary spectrum \n"
+     "freq: the centre frequency of a zoom band \n"
+     "bw: the total bandwidth in MHz (default 1)\n"
+     "chan_bw: the zoom channel bandwidth in MHz (default 0.002)\n"
+     "e.g. -z 1420.4,5,0.004");
 
   arg = menu.add (config->cyclic_nchan, "cyclic", "N");
   arg->set_help ("form cyclic spectra with N channels (per input channel)");

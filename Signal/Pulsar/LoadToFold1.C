@@ -535,10 +535,9 @@ void dsp::LoadToFold::construct () try
       unsigned max_nbin = 128; // TODO -- make this an option
       parse_zoom_conf(config->zooms[i],&centre_freq,&zoom_bw,&chan_bw);
 
-      //if (Operation::verbose)
-        cerr << "Setting up zoom " << i+1 
-             << " with zoom_bw=" << zoom_bw << " chan_bw=" << chan_bw
-             << " about centre frequency=" << centre_freq << endl;
+      cerr << "dspsr: setting up zoom band " << i+1 
+           << " with zoom_bw=" << zoom_bw << ", chan_bw=" << chan_bw
+           << " about centre frequency=" << centre_freq << endl;
 
       // transformation to coarse zoom
       Reference::To<FZoom> fzoom = new FZoom;
