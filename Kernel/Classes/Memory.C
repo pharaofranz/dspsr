@@ -37,6 +37,13 @@ void dsp::Memory::do_copy (void* to, const void* from, size_t bytes)
   memcpy (to, from, bytes);
 }
 
+void dsp::Memory::cross_copy (void* to, Memory* memto, 
+    const void* from, const Memory* memfrom, size_t bytes)
+{
+  DEBUG("dsp::Memory::cross_copy (" << to << "," << from << "," << bytes << ")");
+  memcpy (to, from, bytes);
+}
+
 void* dsp::Memory::allocate (size_t nbytes)
 {
   return get_manager()->do_allocate (nbytes);

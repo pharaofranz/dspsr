@@ -87,6 +87,10 @@ namespace dsp {
     virtual void copy_data (const TimeSeries* data, 
 			    uint64_t idat_start = 0, uint64_t ndat = 0);
 
+    //! Copy the data of another TimeSeries instance to a different device
+    virtual void cross_copy_data (const TimeSeries* data, 
+		      uint64_t idat_start = 0, uint64_t ndat = 0);
+
     //! Match the internal memory layout of another TimeSeries
     virtual void internal_match (const TimeSeries*);
 

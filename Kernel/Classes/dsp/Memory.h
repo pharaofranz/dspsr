@@ -30,7 +30,10 @@ namespace dsp {
     virtual void  do_free (void*);
     virtual void  do_zero (void* ptr, size_t nbytes);
     virtual void  do_copy (void* to, const void* from, size_t bytes);
+    virtual void  cross_copy (void* to, Memory* memto, 
+        const void* from, const Memory* memfrom, size_t bytes);
     virtual bool  on_host () const { return true; }
+    virtual int get_device () const { return -1; }
   };
 
 }

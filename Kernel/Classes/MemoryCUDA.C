@@ -46,6 +46,12 @@ void CUDA::PinnedMemory::do_free (void* ptr)
  *
  ***************************************************************************/
 
+CUDA::DeviceMemory::DeviceMemory (cudaStream_t _stream)
+{
+  stream = _stream;
+  cudaGetDevice (&device);
+}  
+
 void* CUDA::DeviceMemory::do_allocate (size_t nbytes)
 {
   DEBUG("CUDA::DeviceMemory::allocate cudaMalloc (" << nbytes << ")");
@@ -97,6 +103,28 @@ void CUDA::DeviceMemory::do_copy (void* to, const void* from, size_t bytes)
     cudaGetDevice (&device);
     throw Error (InvalidState, "CUDA::DeviceMemory::do_copy",
                  "cudaMemcpy%s failed on device %d: %s", stream?"Async":"",  
+                 device, cudaGetErrorString(error));
+  }
+}
+
+void CUDA::DeviceMemory::cross_copy (void* to, Memory* memto, 
+    const void* from, const Memory* memfrom, size_t bytes)
+{
+  DEBUG("CUDA::DeviceMemory::cross_copy (" << to <<","<< from <<","<< bytes << ")");
+  cudaError_t error;
+  int dto = memto->get_device ();
+  int dfrom = memfrom->get_device ();
+  if (dto == dfrom) do_copy (to, from, bytes);
+  if (stream)
+    error = cudaMemcpyPeerAsync (to, dto, from, dfrom, bytes, stream);
+  else
+    error = cudaMemcpyPeer (to, dto, from, dfrom, bytes);
+  if (error != cudaSuccess)
+  {
+    int device;
+    cudaGetDevice (&device);
+    throw Error (InvalidState, "CUDA::DeviceMemory::cross_copy",
+                "cudaMemcpyPeer%s failed on device %d: %s", stream?"Async":"",  
                  device, cudaGetErrorString(error));
   }
 }

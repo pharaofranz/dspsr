@@ -451,6 +451,13 @@ void dsp::TimeSeries::copy_data (const dsp::TimeSeries* copy,
     throw Error (InvalidParam, "dsp::TimeSeries::copy_data",
 		 "copy ndim=%u > this ndim=%u", copy->get_ndim(), get_ndim());
 
+  // After sanity checks, make sure that the buffers are on the same device
+  if (memory->get_device() != copy->get_memory()->get_device())
+  {
+    cross_copy_data (copy, idat_start, copy_ndat);
+    return;
+  }
+
   uint64_t offset = idat_start * get_ndim();
   uint64_t byte_count = copy_ndat * get_ndim() * sizeof(float);
 
@@ -491,6 +498,53 @@ catch (Error& error)
   throw error += "dsp::TimeSeries::copy_data";
 }
 
+void dsp::TimeSeries::cross_copy_data (const dsp::TimeSeries* copy, 
+  uint64_t idat_start, uint64_t copy_ndat) try
+
+{
+  if (verbose)
+    cerr << "dsp::TimeSeries::cross_copy_data" << get_ndat();
+
+  uint64_t offset = idat_start * get_ndim();
+  uint64_t byte_count = copy_ndat * get_ndim() * sizeof(float);
+  const Memory* memfrom = copy->get_memory();
+
+  if (copy_ndat)
+  {
+    switch (order)
+    {
+    case OrderFPT:
+      for (unsigned ichan=0; ichan<get_nchan(); ichan++)
+      {
+        for (unsigned ipol=0; ipol<get_npol(); ipol++)
+        {
+          float* to = get_datptr (ichan, ipol);
+          const float* from = copy->get_datptr(ichan,ipol) + offset;
+          memory->cross_copy (to, memory, from, memfrom, size_t(byte_count));
+        }
+      }
+      break;
+
+    case OrderTFP:
+      {
+      uint64_t times = get_nchan() * get_npol();
+      offset *= times;
+      byte_count *= times;
+
+      float* to = get_dattfp ();
+      const float* from = copy->get_dattfp() + offset;
+      memory->cross_copy (to, memory, from, memfrom, size_t(byte_count));
+      }
+      break;
+    }
+  }
+
+  input_sample = copy->input_sample + idat_start;
+}
+catch (Error& error)
+{
+  throw error += "dsp::TimeSeries::cross_copy_data";
+}
 #if 0
 /*! 
   \retval number of timesamples actually appended.  

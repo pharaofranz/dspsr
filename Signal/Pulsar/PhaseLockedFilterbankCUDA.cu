@@ -16,11 +16,13 @@ CUDA::PhaseLockedFilterbankEngine::PhaseLockedFilterbankEngine(
   fft_plan = 0;
   mem = 0;
 
+  CUDA::DeviceMemory* gpu_mem = new CUDA::DeviceMemory (stream) ;
+
   m_prof = new dsp::PhaseSeries;
-  m_prof->set_memory (new CUDA::DeviceMemory (stream));
+  m_prof->set_memory (gpu_mem);
 
   scratch = new dsp::Scratch;
-  scratch->set_memory (new CUDA::DeviceMemory (stream));
+  scratch->set_memory (gpu_mem);
 }
 
 // TODO -- make destructor work
