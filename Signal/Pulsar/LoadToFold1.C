@@ -601,7 +601,6 @@ void dsp::LoadToFold::construct () try
       zoom_filterbank[i]->set_nbin (max_nbin); // maximum phase bins
       zoom_filterbank[i]->set_npol (config->npol);
       zoom_filterbank[i]->set_goal_chan_bw (chan_bw);
-      //zoom_filterbank[i]->set_input (fzoom->get_output());
 #ifdef HAVE_CUDA
       if (run_on_gpu)
         zoom_filterbank[i]->set_engine (

@@ -434,7 +434,7 @@ void dsp::PhaseLockedFilterbank::transformation ()
       sample_offset += block_advance;
 
     } // for each block in time series
-    }
+    } // not using engine
 
     // update total hits; each block has equal sample weight
     get_output()->get_hits()[phase_bin] += nblock;
@@ -496,7 +496,7 @@ void dsp::PhaseLockedFilterbank::normalize_output ()
 
 void dsp::PhaseLockedFilterbank::reset () 
 {
-  //if (verbose)
+  if (verbose)
   {
     cerr << "dsp::PhaseLockedFilterbank::reset" << endl;
     cerr << "dsp::PhaseLockedFilterbank::reset start_time=" 
@@ -547,7 +547,6 @@ dsp::PhaseSeries* dsp::PhaseLockedFilterbank::get_result() const
   if (verbose)
     cerr << "dsp::PhaseLockedFilterbank::get_result" << endl;
 
-  cerr<<"ndat_folded="<<output->get_ndat_folded()<<endl;
   if (engine) 
   {
     if (verbose)
@@ -556,9 +555,6 @@ dsp::PhaseSeries* dsp::PhaseLockedFilterbank::get_result() const
     engine->sync_phase_series (output);
     //output->set_folding_predictor( bin_divider.get_predictor() );
   }
-  cerr<<"integration length="<<output->get_integration_length()<<endl;
-  cerr<<"nbin="<<output->get_nbin()<<endl;
-  cerr<<"ndat_folded="<<output->get_ndat_folded()<<endl;
 
   return output;
 }

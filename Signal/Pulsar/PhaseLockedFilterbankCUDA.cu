@@ -43,17 +43,28 @@ void CUDA::PhaseLockedFilterbankEngine::setup_phase_series (
 void CUDA::PhaseLockedFilterbankEngine::sync_phase_series (
     dsp::PhaseSeries* output)
 {
-  // first, sync cached version with output for metadata
-  m_prof->copy_configuration (output);
 
-  // then transfer data and metadata back over
-  if (!transfer)
-    transfer = new dsp::TransferPhaseSeriesCUDA(stream);
-  transfer->set_kind ( cudaMemcpyDeviceToHost );
-  transfer->set_input ( m_prof );
-  transfer->set_output ( output );
-  transfer->set_transfer_hits ( false );
-  transfer->operate ();
+  output->internal_match (m_prof);
+
+  if (stream)
+    cudaStreamSynchronize(stream);
+  else
+    cudaThreadSynchronize();
+
+  cudaError error;
+  cudaMemcpyKind kind = cudaMemcpyDeviceToHost; 
+  if (stream)
+    error = cudaMemcpyAsync (output->internal_get_buffer(), 
+                             m_prof->internal_get_buffer(), 
+                             m_prof->internal_get_size(), kind, stream);
+  else
+    error = cudaMemcpy (output->internal_get_buffer(),
+                        m_prof->internal_get_buffer(),
+                        m_prof->internal_get_size(), kind);
+  if (error != cudaSuccess)
+    throw Error (InvalidState,
+                 "CUDA::PhaseLockedFilterbankEngine::sync_phase_series",
+                 cudaGetErrorString (error));
 
 }
 
