@@ -639,6 +639,10 @@ dsp::SingleThread::Config::Config ()
   // use input buffering
   input_buffering = true;
 
+  // no round robin by default
+  round_robin = false;
+
+
   list_attributes = false;
 
   nthread = 0;
@@ -786,6 +790,9 @@ void dsp::SingleThread::Config::add_options (CommandLine::Menu& menu)
 
   arg = menu.add (input_buffering, "overlap");
   arg->set_help ("disable input buffering");
+
+  arg = menu.add (round_robin, "roundrobin");
+  arg->set_help ("enable buffering of non-contiguous (round robin) input");
 
   arg = menu.add (command_line_header, "header");
   arg->set_help ("command line arguments are header values (not filenames)");

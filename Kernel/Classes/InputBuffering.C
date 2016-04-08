@@ -32,6 +32,7 @@ void dsp::InputBuffering::set_minimum_samples (uint64_t samples)
 }
 
 /*! Copy remaining data from the target Transformation's input to buffer */
+/* NB THIS ARGUMENT IS OFFSET (relative to start of chunk) */
 void dsp::InputBuffering::set_next_start (uint64_t next)
 {
   const TimeSeries* input = get_input();
@@ -140,5 +141,11 @@ int64_t dsp::InputBuffering::get_next_contiguous () const
     return -1;
 
   return buffer->get_input_sample() + buffer->get_ndat();
+}
+
+void dsp::InputBuffering::reset_buffer ()
+{
+  if (buffer)
+    buffer = NULL;
 }
 

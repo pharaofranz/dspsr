@@ -221,6 +221,9 @@ namespace dsp {
     //! use input-buffering to compensate for operation edge effects
     bool input_buffering;
 
+    //! enable non-contiguous buffers in round robin mode
+    bool round_robin;
+
     //! use weighted time series to flag bad data
     bool weighted_time_series;
 

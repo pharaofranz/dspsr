@@ -118,6 +118,10 @@ void dsp::SampleDelay::prepare ()
     cerr << "dsp::SampleDelay::prepare reserve=" << total_delay << endl;
 
   get_buffering_policy()->set_minimum_samples (total_delay);
+
+  if ( get_input() != get_output() )
+    get_output()->copy_configuration ( get_input() );
+
 }
 
 /*!
@@ -141,7 +145,8 @@ void dsp::SampleDelay::transformation ()
   {
     if (verbose)
       cerr << "dsp::SampleDelay::transformation insufficient data\n"
-        "  input ndat=" << input_ndat << " total delay=" << total_delay  << endl;
+           << "  input ndat=" << input_ndat << " total delay=" 
+           << total_delay  << endl;
   }
   else
     output_ndat = input_ndat - total_delay;
@@ -152,7 +157,10 @@ void dsp::SampleDelay::transformation ()
   output->copy_configuration (input);
 
   if (output != input)
+  {
     output->resize (output_ndat);
+    output->set_input_sample (input->get_input_sample () );
+  }
   else
     output->set_ndat (output_ndat);
 

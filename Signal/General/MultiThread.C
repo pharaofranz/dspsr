@@ -143,7 +143,11 @@ void dsp::MultiThread::share ()
     if (!ibuf)
       continue;
 
-    xform->set_buffering_policy( new InputBuffering::Share (ibuf, xform) );
+    InputBuffering::Share* sibuf = new InputBuffering::Share (ibuf, xform );
+    if (configuration)
+      sibuf-> set_round_robin_mode (configuration->round_robin);
+
+    xform->set_buffering_policy( sibuf );
   }
 
   typedef Transformation<TimeSeries,PhaseSeries> Xform_ph;
@@ -163,7 +167,11 @@ void dsp::MultiThread::share ()
     if (!ibuf)
       continue;
 
-    xform->set_buffering_policy( new InputBuffering::Share (ibuf, xform) );
+    InputBuffering::Share* sibuf = new InputBuffering::Share (ibuf, xform );
+    if (configuration)
+      sibuf-> set_round_robin_mode (configuration->round_robin);
+
+    xform->set_buffering_policy( sibuf );
   }
 }
 

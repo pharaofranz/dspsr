@@ -44,6 +44,9 @@ namespace dsp {
     //! Set the minimum number of samples that can be processed
     void set_minimum_samples (uint64_t samples);
 
+    //! Detect non-contiguous input and reset buffer accordingly
+    void set_round_robin_mode (bool enable=true) {round_robin_mode=enable;}
+
   protected:
     
     //! The target with input TimeSeries to be buffered
@@ -60,6 +63,9 @@ namespace dsp {
 
     //! Owner of the context attribute;
     bool context_owner;
+
+    //! Run in round-robin mode
+    bool round_robin_mode;
 
   };
 

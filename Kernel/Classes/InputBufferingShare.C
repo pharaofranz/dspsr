@@ -17,6 +17,7 @@ dsp::InputBuffering::Share::Share ()
   name = "InputBuffering::Share";
   context = 0;
   context_owner = false;
+  round_robin_mode = false;
 
   reserve = new Reserve;
 }
@@ -42,6 +43,7 @@ dsp::InputBuffering::Share::clone (HasInput<TimeSeries>* _target)
   result -> buffer = buffer;
   result -> target = _target;
   result -> context = context;
+  result -> round_robin_mode = round_robin_mode;
 
   return result;
 }
@@ -110,7 +112,18 @@ void dsp::InputBuffering::Share::pre_transformation () try
 
   // don't wait for data preceding the first loaded block
   if (want <= 0)
+  {
+    // if the input sample has been reset by round robin, reset the buffer
+    // this is detected by checking that the buffer has been "used" before
+    if (round_robin_mode && (buffer->get_next_contiguous() > 0) )
+    {
+      if (Operation::verbose)
+        cerr << "dsp::InputBuffering::Share detected non-contiguous block:"
+             << " resetting buffer." << endl;
+      buffer->reset_buffer ();
+    }
     return;
+  }
 
   if (Operation::verbose)
     cerr << "dsp::InputBuffering::Share::pre_transformation want=" << want
@@ -118,22 +131,23 @@ void dsp::InputBuffering::Share::pre_transformation () try
 
   while ( buffer->get_next_contiguous() != want )
   {
-    if (buffer->get_next_contiguous() > want)
+    if ( (buffer->get_next_contiguous() > want) && !round_robin_mode )
       throw Error (InvalidState, 
                    "dsp::InputBuffering::Share::pre_transformation",
                    "have=%"PRIu64" > want=%"PRIu64,
                    buffer->get_next_contiguous(), want);
 
     if (Operation::verbose)
-      cerr << "dsp::InputBuffering::Share::pre_transformation blocking want=" << want 
-	   << "; have=" << buffer->get_next_contiguous() << endl;
+      cerr << "dsp::InputBuffering::Share::pre_transformation blocking"
+           << " want=" << want 
+           << " have=" <<  buffer->get_next_contiguous() << endl;
 
     context->wait();
   }
 
   if (Operation::verbose)
   {
-    cerr << "dsp::InputBuffering::Share::pre_transformation working" << endl;
+    cerr << "dsp::InputBuffering::Share::pre_transformation working ";
     cerr << "want=" << want << " have=" << buffer->get_next_contiguous() << endl;
     buffer->set_cerr (cerr);
   }
