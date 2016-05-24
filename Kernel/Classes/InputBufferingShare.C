@@ -99,6 +99,11 @@ catch (Error& error)
   throw error += "dsp::InputBuffering::Share::set_next_start";
 }
 
+int64_t dsp::InputBuffering::Share::get_next_contiguous () const
+{
+  return buffer->get_next_contiguous ();
+}
+
 /*! Prepend buffered data to target Transformation's input TimeSeries */
 void dsp::InputBuffering::Share::pre_transformation () try
 {

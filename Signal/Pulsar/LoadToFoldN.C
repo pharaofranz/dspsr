@@ -76,8 +76,14 @@ void dsp::LoadToFoldN::share ()
     if (!subints_ok)
       subints_ok = prepare_subint_archival <CyclicFold> ();
     if (!subints_ok)
+      subints_ok = prepare_zoom_subint_archival ();
+    if (!subints_ok)
       throw Error (InvalidState, "dsp::LoadToFoldN::share",
           "folder is not a recognized Subint<> type.");
+    //bool zooms_ok = prepare_zoom_subint_archival ();
+    //if (!zooms_ok)
+    //  throw Error (InvalidState, "dsp::LoadToFoldN::share",
+    //      "could not make shared unloader for zoom output");
   }
 }
 
@@ -87,8 +93,8 @@ bool dsp::LoadToFoldN::prepare_subint_archival ()
   unsigned nfold = at(0)->fold.size();
 
   if (Operation::verbose)
-    cerr << "dsp::LoadToFoldN::prepare_subint_archival nfold=" << nfold
-	 << endl;
+    cerr << "dsp::LoadToFoldN::prepare_subint_archival nfold=" << nfold 
+      << endl;
 
   if( at(0)->unloader.size() != nfold )
     throw Error( InvalidState, "dsp::LoadToFoldN::prepare_subint_archival",
@@ -98,7 +104,10 @@ bool dsp::LoadToFoldN::prepare_subint_archival ()
   unloader.resize( nfold );
 
   for (unsigned i=1; i<threads.size(); i++)
+  {
     at(i)->unloader.resize( nfold );
+  }
+    
 
   /*
     Note that, at this point, only thread[0] has been prepared.
@@ -132,7 +141,7 @@ bool dsp::LoadToFoldN::prepare_subint_archival ()
         submit->set_unloader( primary_unloader->clone() );
 
       if (Operation::verbose)
-	cerr << "dsp::LoadToFoldN::prepare_subint_archival submit ptr="
+	      cerr << "dsp::LoadToFoldN::prepare_subint_archival submit ptr="
 	     << submit << endl;
 
       at(i)->unloader[ifold] = submit;
@@ -140,7 +149,7 @@ bool dsp::LoadToFoldN::prepare_subint_archival ()
       subfold = dynamic_cast< Subint<T>* >( at(i)->fold[ifold].get() );
 
       if (!subfold)
-	return false;
+	      return false;
 
       subfold->set_unloader( submit );
     }
@@ -152,17 +161,103 @@ bool dsp::LoadToFoldN::prepare_subint_archival ()
   return true;
 }
 
-void dsp::LoadToFoldN::finish ()
+bool dsp::LoadToFoldN::prepare_zoom_subint_archival ()
+{
+  unsigned nfold = unloader.size();
+  nfold = 0; // TMP
+  unsigned nzoom = at(0)->zoom_filterbank.size();
+  if (nzoom == 0)
+    return true;
+
+  if (Operation::verbose)
+    cerr << "dsp::LoadToFoldN::prepare_zoom_subint_archival"
+         << " nzoom=" << nzoom << endl;
+
+  //if( at(0)->zoom_unloader.size() != nzoom )
+  if( at(0)->unloader.size() != nzoom )
+    throw Error( InvalidState, "dsp::LoadToFoldN::prepare_subint_archival",
+		 "zoom_unloader vector size=%u != zoom vector size=%u",
+		 //at(0)->zoom_unloader.size(), nzoom );
+		 at(0)->unloader.size(), nzoom );
+
+  unloader.resize( nfold + nzoom );
+
+  for (unsigned i=1; i<threads.size(); i++)
+  {
+    at(i)->unloader.resize( nfold + nzoom);
+  }
+    
+
+  /*
+    Note that, at this point, only thread[0] has been prepared.
+    Therefore, only thread[0] will have an initialized fold array
+  */
+
+  for (unsigned izoom = 0; izoom < nzoom; izoom ++)
+  {
+    Subint<PhaseLockedFilterbank>* subfold = 
+      dynamic_cast< Subint<PhaseLockedFilterbank>* > 
+        ( at(0)->zoom_filterbank[izoom].get() );
+
+    if (!subfold)
+      return false;
+
+    unloader[izoom+nfold] = new UnloaderShare( threads.size() );
+    unloader[izoom+nfold]->copy( subfold->get_divider() );
+    unloader[izoom+nfold]->set_context( new ThreadContext );
+
+    //PhaseSeriesUnloader* primary_unloader = at(0)->zoom_unloader[izoom];
+    PhaseSeriesUnloader* primary_unloader = at(0)->unloader[izoom];
+
+    if (configuration->concurrent_archives())
+      unloader[izoom+nfold]->set_wait_all (false);
+    else
+      unloader[izoom+nfold]->set_unloader( primary_unloader );
+
+    for (unsigned i=0; i<threads.size(); i++) 
+    {
+      UnloaderShare::Submit* submit = unloader[izoom+nfold]->new_Submit (i);
+
+      if (configuration->concurrent_archives())
+        submit->set_unloader( primary_unloader->clone() );
+
+      if (Operation::verbose)
+        cerr << "dsp::LoadToFoldN::prepare_subint_archival submit ptr="
+         << submit << endl;
+
+      at(i)->unloader[izoom+nfold] = submit;
+
+      subfold = dynamic_cast< Subint<PhaseLockedFilterbank>* >
+        ( at(i)->zoom_filterbank[izoom].get() );
+
+      if (!subfold)
+	      return false;
+
+      subfold->set_unloader( submit );
+    }
+  }
+
+  if (Operation::verbose)
+    cerr << "dsp::LoadToFoldN::prepare_zoom_subint_archival done" << endl;
+
+  return true;
+}
+
+void dsp::LoadToFoldN::finish () try
 {
   MultiThread::finish ();
 
   for (unsigned i=0; i<unloader.size(); i++)
   {
     if (Operation::verbose)
-      cerr << "psr::LoadToFoldN::finish unloader[" << i << "]" << endl;
+      cerr << "dsp::LoadToFoldN::finish unloader[" << i << "]" << endl;
 
     unloader[i]->finish();
   }
+}
+catch (Error& error)
+{
+  throw error += "dsp::LoadToFoldN::finish";
 }
 
 //! The creator of new LoadToFold1 threadss

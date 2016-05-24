@@ -17,7 +17,7 @@ Fold.C                  UnloaderShare.C \
 LoadToFold1.C           PhaseLockedFilterbank.C \
 LoadToFoldConfig.C      PhaseSeries.C  \
 LoadToFoldN.C           PhaseSeriesUnloader.C \
-CyclicFold.C
+CyclicFold.C            Subint.C
 
 if HAVE_CUFFT
 

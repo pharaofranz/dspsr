@@ -44,7 +44,7 @@ namespace dsp {
     void reset_buffer ();
 
     //! Get the next contiguous sample following the current buffer
-    int64_t get_next_contiguous () const;
+    virtual int64_t get_next_contiguous () const;
 
     //! Shares a single InputBuffering instance between multiple threads
     class Share;

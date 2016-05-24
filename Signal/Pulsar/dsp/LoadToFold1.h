@@ -98,6 +98,15 @@ namespace dsp {
     //! An unloader for each pulsar to be folded
     std::vector< Reference::To<PhaseSeriesUnloader> > unloader;
 
+    //! Operations specifically for Zooms
+    std::vector< Reference::To<Operation> > zoom_operations;
+
+    //! Phase-locked filterbanks for zooms
+    std::vector< Reference::To<PhaseLockedFilterbank> > zoom_filterbank;
+
+    //! Unloaders for phase-locked filterbanks for zooms
+    std::vector< Reference::To<PhaseSeriesUnloader> > zoom_unloader;
+
     //! An unique signal path for each pulsar to be folded
     std::vector< Reference::To<SignalPath> > path;
 
@@ -140,12 +149,6 @@ namespace dsp {
     /*! Useful when trying to squeeze frequency resolution out of a short
       period pulsar for the purposes of scintillation measurments */
     Reference::To<PhaseLockedFilterbank> phased_filterbank;
-
-    //! Phase-locked filterbanks for zooms
-    std::vector< Reference::To<PhaseLockedFilterbank> > zoom_filterbank;
-
-    //! Unloaders for phase-locked filterbanks for zooms
-    std::vector< Reference::To<PhaseSeriesUnloader> > zoom_unloader;
 
     //! Detects the phase-coherent signal
     Reference::To<Detection> detect;

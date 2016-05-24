@@ -325,48 +325,48 @@ void dsp::MultiThread::finish ()
             cerr << " pending" << endl;
           else if (state == SingleThread::Joined)
             cerr << " processed" << endl;
-	  else
-	    cerr << " unknown state" << endl;
+          else
+            cerr << " unknown state" << endl;
         }
         continue;
       }
 
       try {
 
-	if (Operation::verbose)
-	  cerr << "psr::MultiThread::finish joining thread " << i << endl;
+        if (Operation::verbose)
+          cerr << "psr::MultiThread::finish joining thread " << i << endl;
 
-	void* result = 0;
-	pthread_join (ids[i], &result);
+        void* result = 0;
+        pthread_join (ids[i], &result);
 
         if (Operation::verbose)
           cerr << "psr::MultiThread::finish thread " << i << " joined" << endl;
 
-	finished ++;
+        finished ++;
         threads[i]->state = SingleThread::Joined;
 
-	if (state == SingleThread::Fail)
+        if (state == SingleThread::Fail)
         {
-	  errors ++;
-	  error = threads[i]->error;
+          errors ++;
+          error = threads[i]->error;
           cerr << "thread " << i << " aborted with error\n\t"
                << error.get_message() << endl;
           continue;
-	}
+        }
 
-	if (!first)
-	{
+        if (!first)
+        {
           if (Operation::verbose)
             cerr << "psr::MultiThread::finish initializing first" << endl;
 
-	  first = threads[i];
-	}
-	else
+          first = threads[i];
+        }
+        else
         {
           if (Operation::verbose)
             cerr << "psr::MultiThread::finish combining with first" << endl;
 
-	  first->combine( threads[i] );
+          first->combine( threads[i] );
         }
 
       }

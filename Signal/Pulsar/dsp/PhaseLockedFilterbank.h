@@ -58,6 +58,9 @@ namespace dsp {
     //! Get the number of polarizations
     unsigned get_npol () const { return npol; }
 
+    //! Get number of samples in FFT operation
+    unsigned get_ndat_fft () const;
+
     //! Overlap windows to consume all time samples in a phase window
     void set_overlap (bool overlap);
 

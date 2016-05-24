@@ -11,6 +11,7 @@
 
 #include "dsp/TimeDivide.h"
 #include "dsp/PhaseSeries.h"
+#include "dsp/PhaseLockedFilterbank.h"
 
 #include "Phase.h"
 #include "Callback.h"
@@ -146,6 +147,7 @@ namespace dsp {
 
   };
 
+  template <> void Subint<PhaseLockedFilterbank>::transformation ();
 }
 
 #include "dsp/SignalPath.h"
@@ -265,6 +267,7 @@ void dsp::Subint<Op>::transformation () try
          processing in parallel. */
 
       unload_partial ();
+
     }
 
     if (!divider.get_is_valid())
@@ -307,7 +310,6 @@ catch (Error& error)
 {
   throw error += "dsp::Subint::transformation";
 }
-
 
 /*! sets the Fold::idat_start and Fold::ndat_fold attributes */
 template <class Op>
@@ -374,6 +376,7 @@ catch (Error& error)
 template <class Op>
 void dsp::Subint<Op>::zero_output ()
 {
+
 #ifdef SIGNAL_PATH
   SignalPath* path = 0;
   PhaseSeries* out_ptr = Op::output;
@@ -385,7 +388,9 @@ void dsp::Subint<Op>::zero_output ()
   }
 
   if (path)
+  {
     path->reset();
+  }
   else
 #endif
     Op::reset();

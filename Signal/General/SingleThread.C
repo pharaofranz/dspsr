@@ -420,46 +420,53 @@ void dsp::SingleThread::run () try
     {
       for (unsigned iop=0; iop < operations.size(); iop++) try
       {
-	if (Operation::verbose)
-	  cerr << "dsp::SingleThread::run calling " 
-	       << operations[iop]->get_name() << endl;
-      
-	operations[iop]->operate ();
-      
-	if (Operation::verbose)
-	  cerr << "dsp::SingleThread::run "
-	       << operations[iop]->get_name() << " done" << endl;
+        if (Operation::verbose)
+          cerr << "dsp::SingleThread::run calling " 
+               << operations[iop]->get_name() << endl;
+            
+        operations[iop]->operate ();
+            
+        if (Operation::verbose)
+          cerr << "dsp::SingleThread::run "
+               << operations[iop]->get_name() << " done" << endl;
       
       }
       catch (Error& error)
       {
-	if (error.get_code() == EndOfFile)
-	  break;
+        if (error.get_code() == EndOfFile)
+          break;
 
-	end_of_data ();
+        // MTK 17/04/16 
+        // Calling end_of_data can lead to a hung state if thread are in
+        // a deadlock, so terminate directly if encountering an unhandled
+        // exception.
+        //end_of_data ();
+        //throw error += "dsp::SingleThread::run";
+        error += "dsp::SingleThread::run";
+        cerr << error;
+        exit (error.get_code());
 
-	throw error += "dsp::SingleThread::run";
       }
     
       block++;
     
       if (thread_id==0 && config->report_done) 
       {
-	double seconds = input->tell_seconds();
-	int64_t decisecond = int64_t( seconds * 10 );
+        double seconds = input->tell_seconds();
+        int64_t decisecond = int64_t( seconds * 10 );
       
-	if (decisecond > last_decisecond)
-	{
-	  last_decisecond = decisecond;
-	  cerr << "Finished " << decisecond/10.0 << " s";
+        if (decisecond > last_decisecond)
+        {
+          last_decisecond = decisecond;
+          cerr << "Finished " << decisecond/10.0 << " s";
 
-	  if (nblocks_tot)
-	    cerr << " (" 
-		 << int (100.0*input->tell()/float(input->get_total_samples()))
-		 << "%)";
+          if (nblocks_tot)
+            cerr << " (" 
+           << int (100.0*input->tell()/float(input->get_total_samples()))
+           << "%)";
 
-	  cerr << "   \r";
-	}
+          cerr << "   \r";
+        }
       }
     }
 
@@ -471,30 +478,30 @@ void dsp::SingleThread::run () try
 
       if (config->repeated == 0 && input->tell() != 0)
       {
-	// cerr << "dspsr: do it again" << endl;
-	File* file = dynamic_cast<File*> (input);
-	if (file)
-	{
-	  finished = false;
-	  string filename = file->get_filename();
-	  file->close();
-	  // cerr << "file closed" << endl;
-	  file->open(filename);
-	  // cerr << "file opened" << endl;
-	  config->repeated = 1;
-	  
-	  if (config->input_prepare)
-	    config->input_prepare (file);
+        // cerr << "dspsr: do it again" << endl;
+        File* file = dynamic_cast<File*> (input);
+        if (file)
+        {
+          finished = false;
+          string filename = file->get_filename();
+          file->close();
+          // cerr << "file closed" << endl;
+          file->open(filename);
+          // cerr << "file opened" << endl;
+          config->repeated = 1;
+          
+          if (config->input_prepare)
+            config->input_prepare (file);
 
-	}
+	      }
       }
       else if (config->repeated)
       {
-	config->repeated ++;
-	finished = false;
+        config->repeated ++;
+        finished = false;
 
-	if (config->repeated == config->get_total_nthread())
-	  config->repeated = 0;
+        if (config->repeated == config->get_total_nthread())
+          config->repeated = 0;
       }
     }
   }

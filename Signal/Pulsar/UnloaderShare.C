@@ -171,8 +171,8 @@ void dsp::UnloaderShare::unload (const PhaseSeries* data, Submit* submit) try
     for (unsigned istore=0; istore < storage.size(); istore++)
       if (storage[istore]->get_finished ())
       {
-	context->broadcast ();
-	break;
+	      context->broadcast ();
+	      break;
       }
   }
 
@@ -505,13 +505,13 @@ bool dsp::UnloaderShare::Storage::integrate( unsigned contributor,
 
       if (into && from)
       {
-	if (Operation::verbose)
-	  cerr << "dsp::UnloaderShare::Storage::integrate into "
-	    "profile=" << profiles.get() << " list=" << into->get_list()
-	       << "\ndsp::UnloaderShare::Storage::integrate from "
-	    "profile=" << data << " list=" << from->get_list() << endl;
+	      if (Operation::verbose)
+	        cerr << "dsp::UnloaderShare::Storage::integrate into "
+	          "profile=" << profiles.get() << " list=" << into->get_list()
+	             << "\ndsp::UnloaderShare::Storage::integrate from "
+	          "profile=" << data << " list=" << from->get_list() << endl;
 
-	into->combine(from);
+	      into->combine(from);
       }
     }
     else
@@ -557,7 +557,6 @@ bool dsp::UnloaderShare::Storage::get_finished ()
 
 void dsp::UnloaderShare::Storage::print_finished ()
 {
-  cerr << "division=" << division << " finished:";
   for (unsigned i=0; i < finished.size(); i++)
     cerr << " " << finished[i];
   cerr << endl;

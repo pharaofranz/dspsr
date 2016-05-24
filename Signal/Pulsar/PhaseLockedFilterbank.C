@@ -81,10 +81,6 @@ template<class T> T sqr (T x) { return x*x; }
 
 void dsp::PhaseLockedFilterbank::prepare ()
 {
-  if (nchan < 2 && nbin < 2)
-    throw Error (InvalidState, "dsp::PhaseLockedFilterbank::prepare",
-		 "invalid dimensions.  nchan=%d nbin=%d", nchan, nbin);
-
   MJD epoch = input->get_start_time();
   double period = 1.0/bin_divider.get_predictor()->frequency(epoch);
 
@@ -127,7 +123,16 @@ void dsp::PhaseLockedFilterbank::prepare ()
   //  cerr << "dsp::PhaseLockedFilterbank::prepare warning selected nchan="
 	// << nchan << " > suggested max=" << max << endl;
 
-  //if (verbose)
+  // final check to handle edge case of nearly identical samples per bin
+  // and samples per spectrum
+  if (unsigned(samples_per_bin) < nchan)
+  {
+    if (verbose)
+      cerr << "dsp::PhaseLockedFilterbank::prepare deducing bins by one due to near commensurate values." << endl;
+    set_nbin (get_nbin() -1);
+  }
+
+  if (verbose)
     cerr << "dsp::PhaseLockedFilterbank::prepare period=" << period 
          << " nbin=" << nbin << " samples=" << samples_per_bin 
          << " nchan=" << nchan << endl;
@@ -138,7 +143,24 @@ void dsp::PhaseLockedFilterbank::prepare ()
     reserve *= 2;
   get_buffering_policy() -> set_minimum_samples(reserve);
 
+  if (nchan < 2 && nbin < 2)
+    throw Error (InvalidState, "dsp::PhaseLockedFilterbank::prepare",
+		 "invalid dimensions.  nchan=%d nbin=%d", nchan, nbin);
+
   built = true;
+}
+
+unsigned dsp::PhaseLockedFilterbank::get_ndat_fft () const
+{
+  if (input->get_state() == Signal::Nyquist)
+    return 2 * nchan;
+
+  else if (input->get_state() == Signal::Analytic)
+    return nchan;
+
+  else
+    throw Error (InvalidState, "dsp::PhaseLockedFilterbank::transformation",
+		 "invalid input data state = " + tostring(input->get_state()));
 }
 
 void dsp::PhaseLockedFilterbank::transformation ()
@@ -147,32 +169,19 @@ void dsp::PhaseLockedFilterbank::transformation ()
   const unsigned input_nchan = input->get_nchan();
   const unsigned input_npol = input->get_npol();
   const unsigned input_ndim = input->get_ndim();
-  // TMP?
-  const double input_bandwidth = input->get_bandwidth();
-
-  //cerr << "here with integration= "<<setprecision(4)<<get_output()->get_integration_length() << endl;
 
   if (verbose)
     cerr << "dsp::PhaseLockedFilterbank::transformation"
-         << " input ndat=" << input_ndat << " nchan=" << nchan
+         << " input ndat=" << input_ndat << " nchan=" << nchan << " ndat_fft=" << get_ndat_fft()
          << " input_npol=" << input_npol << " input_ndim=" << input_ndim
-         << " input_sample " << input->get_input_sample() << endl;
+         << " input_sample " << input->get_input_sample()// << endl;
+         << " output_integration = " << get_output()->get_integration_length() << endl;
 
   if (!built)
     prepare ();
 
   // number of time samples in first fft
-  unsigned ndat_fft = 0;
-
-  if (input->get_state() == Signal::Nyquist)
-    ndat_fft = 2 * nchan;
-
-  else if (input->get_state() == Signal::Analytic)
-    ndat_fft = nchan;
-
-  else
-    throw Error (InvalidState, "dsp::PhaseLockedFilterbank::transformation",
-		 "invalid input data state = " + tostring(input->get_state()));
+  unsigned ndat_fft = get_ndat_fft ();
 
   bool new_integration = false;
   if (get_output()->get_integration_length() == 0.0) 
@@ -207,7 +216,7 @@ void dsp::PhaseLockedFilterbank::transformation ()
     // the band centre frequency, so no half channel ambiguity
     // centre frequency is shifted within original channels by this amt.
     //get_output()->set_centre_frequency (
-    //    get_input()->get_centre_frequency() + 0.5*input_bandwidth/input_nchan*(1./nchan-1) );
+    //    get_input()->get_centre_frequency() + 0.5*input->get_bandwidth/input_nchan*(1./nchan-1) );
     get_output()->set_centre_frequency (
         get_input()->get_centre_frequency());
 
@@ -234,10 +243,20 @@ void dsp::PhaseLockedFilterbank::transformation ()
 
   bool first = false;
 
-  // set_limits sets idat_start==0 and ndat_fold==get_input->get_ndat()
+  // If not using Subint, set_limits sets idat_start==0 and 
+  // ndat_fold==get_input->get_ndat(); otherwise, will set the ndat_fold
+  // to the boundary edge of the sub-integration
   set_limits (input);
+
+  // will be true if outside entity (like Subint) setting the bounds
+  bool trunc2 = idat_start > 0;
+  bool trunc1 = !trunc2 && ndat_fold && (ndat_fold < input->get_ndat());
+  //cerr << "trunc1=" << trunc1 << " trunc2="<<trunc2 <<endl;
+
+  //cerr << "idat_start = " << idat_start << " ndat_fold=" << ndat_fold << endl;
   uint64_t idat_end = ndat_fold==0 ? input_ndat : idat_start + ndat_fold;
   if (idat_end > input_ndat) idat_end = input_ndat;
+
   if (verbose)
     cerr << "dsp::PhaseLockedFilterbank::transformation"
       << " idat_start=" << idat_start
@@ -310,7 +329,6 @@ void dsp::PhaseLockedFilterbank::transformation ()
     // if input TimeSeries ends before the current phase window
     if (idat_start + ndat_fft > idat_end) 
     {
-      //cerr << "breaking phase window" << endl;
       bin_divider.discard_bounds( get_input() );
       break;
     }
@@ -329,9 +347,7 @@ void dsp::PhaseLockedFilterbank::transformation ()
       get_output()->set_start_time(time0);
     }
     else 
-    {
       get_output()->set_start_time(std::min(output->get_start_time(), time0));
-    }
     get_output()->set_end_time(std::max(output->get_end_time(), time1));
 
     // Scheme: split the total_ndat samples of the time series up into 
@@ -444,10 +460,37 @@ void dsp::PhaseLockedFilterbank::transformation ()
   } // for each big fft (ipart)
 
 
-  // cerr << "main loop finished" << endl;
-
+  //uint64_t min_samples = std::max( uint64_t(ndat_fft), input->get_ndat() );
+  ////get_buffering_policy()->set_minimum_samples (min_samples);
   get_buffering_policy()->set_minimum_samples (ndat_fft);
-  get_buffering_policy()->set_next_start (idat_start);
+
+  if (trunc1)
+  {
+    if (verbose)
+      cerr << "dsp::PhaseLockedFilterbank skipping buffering." << endl;
+    get_output()->increment_integration_length( total_integrated );
+    return;
+  }
+
+  uint64_t next_start = input->get_ndat()-ndat_fft+1;
+  int64_t buffer_pos = get_buffering_policy()->get_next_contiguous();
+  // make sure no trouble with signed/unsigned
+  if (buffer_pos < 0) buffer_pos = 0;
+  if ((next_start+input->get_input_sample()) > buffer_pos)
+  {
+    //cerr << "setting next start = " 
+    //    << input->get_input_sample() + next_start
+    //    << " buffer: next sample=" 
+    //    << get_buffering_policy()->get_next_contiguous() << endl;
+    get_buffering_policy()->set_next_start (next_start);
+  }
+  else
+  {
+    //cerr << "not setting next start = " 
+    //     << input->get_input_sample() + next_start
+    //     << " lagged buffer = " 
+    //     << get_buffering_policy()->get_next_contiguous() << endl;
+  }
 
   get_output()->increment_integration_length( total_integrated );
 
@@ -520,6 +563,7 @@ void dsp::PhaseLockedFilterbank::finish ()
 {
   if (verbose)
     cerr << "dsp::PhaseLockedFilterbank::finish" << endl;
+  get_result ();
 
 }
 
@@ -536,8 +580,6 @@ void dsp::PhaseLockedFilterbank::combine (const Operation* other)
 
   get_output()->combine( plfb->get_output() );
 
-  if (verbose)
-    cerr << "dsp::PhaseLockedFilterbank::combine another PhaseLockedFilterbank exit" << endl;
 }
 
 

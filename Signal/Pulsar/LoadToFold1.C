@@ -133,6 +133,29 @@ void parse_zoom_conf (string zoom_conf,double* centre_frequency,
   *chan_bw = strtod(zoom_conf.c_str(),NULL); 
 }
 
+//! Remove any operations occurring in ops2 from ops1
+std::vector< Reference::To<dsp::Operation> > remove_operations (
+    std::vector< Reference::To<dsp::Operation> > ops1,
+    std::vector< Reference::To<dsp::Operation> > ops2 )
+{
+  std::vector<Reference::To<dsp::Operation> > rvals;
+  for (unsigned i = 0; i < ops1.size(); ++i)
+  {
+    bool ok = true;
+    for (unsigned j = 0; j < ops2.size(); ++j)
+    {
+      if (ops1[i].get() == ops2[j].get())
+      {
+        ok = false;
+        break;
+      }
+    }
+    if (ok)
+      rvals.push_back ( ops1[i] );
+  }
+  return rvals;
+}
+
 void dsp::LoadToFold::construct () try
 {
   SingleThread::construct ();
@@ -449,6 +472,7 @@ void dsp::LoadToFold::construct () try
 
   if (config->plfb_nbin)
   {
+    cerr << "setting up plfb " << endl;
     // Set up output
     Archiver* archiver = new Archiver;
     unloader.resize(1);
@@ -527,6 +551,15 @@ void dsp::LoadToFold::construct () try
     // Set up zoom transformations, delays, etc.
     zoom_filterbank.resize (config -> zooms.size());
 
+    // Make dummy fold instances for the zoom modes
+    fold.resize(config->zooms.size());
+    path.resize(config->zooms.size());
+
+    // Make signal paths with steps up to zoom creation, then fork for
+    // each separate zoom mode
+    for (unsigned i=0; i < config -> zooms.size(); ++i)
+      path[i] = new SignalPath (operations);
+
     for (unsigned i=0; i < config -> zooms.size(); ++i) {
 
       double zoom_bw = 1; // default 1 MHz bandwidth
@@ -553,6 +586,8 @@ void dsp::LoadToFold::construct () try
       }
 #endif
       operations.push_back ( fzoom.get() );
+      zoom_operations.push_back ( fzoom.get() );
+      path[i]->add ( fzoom.get() );
 
       // in-place removal of channel delays
       TimeSeries* sample_delay_input = fzoom->get_output();
@@ -569,6 +604,8 @@ void dsp::LoadToFold::construct () try
       }
 #endif
       operations.push_back (zoom_delay);
+      zoom_operations.push_back (zoom_delay);
+      path[i]->add ( zoom_delay );
 
       // Set up output
       PhaseSeriesUnloader* archiver = get_unloader (i,true);
@@ -579,7 +616,6 @@ void dsp::LoadToFold::construct () try
 
       if (output_subints()) 
       {
-        cerr << "setting up zoom subints" << endl;
         Subint<PhaseLockedFilterbank> *sub_plfb = 
           new Subint<PhaseLockedFilterbank>;
 
@@ -592,7 +628,8 @@ void dsp::LoadToFold::construct () try
           sub_plfb->set_fractional_pulses (config->fractional_pulses);
         }
 
-        sub_plfb->set_unloader (zoom_unloader[i]);
+        //sub_plfb->set_unloader (zoom_unloader[i]);
+        sub_plfb->set_unloader (unloader[i]);
         zoom_filterbank[i] = sub_plfb;
       }
       else
@@ -618,12 +655,32 @@ void dsp::LoadToFold::construct () try
           config->reference_phase);
 
       operations.push_back (zoom_filterbank[i].get());
+      zoom_operations.push_back (zoom_filterbank[i].get());
+      path[i]->add ( zoom_filterbank[i].get() );
+
+      fold[i] = new dsp::Fold;
+      if (i == 0)
+      {
+        // remaining Folds are purely dummies -- all zoom modes must use
+        // the same ephemeris for now, so don't waste time setting up the
+        // predictors otherwise
+        if (config->folding_period)
+          fold[i]->set_folding_period (config->folding_period);
+        if (config->ephemerides.size() > 0)
+          fold[i]->set_pulsar_ephemeris ( config->ephemerides[0] );
+        else if (config->predictors.size() > 0)
+          fold[i]->set_folding_predictor ( config->predictors[0] );
+      }
+      fold[i]->set_output ( zoom_filterbank[i]->get_output() );
+      fold[i]->prepare ( manager->get_info() );
 
     }
     // NB -- there is still work, wild work to be done
     // After the Fold(s) are set up below, use the predictors to
     // set the bin divider and to choose the number of channels to
     // satisfy the requested zoom configuration
+    return;
+
   }
 
   Reference::To<Fold> presk_fold;
@@ -924,6 +981,9 @@ void dsp::LoadToFold::prepare ()
 
   MJD fold_reference_epoch = parse_epoch (config->reference_epoch);
 
+  std::vector< Reference::To<dsp::Operation> > fold_operations = 
+    remove_operations ( operations, zoom_operations);
+
   for (unsigned ifold=0; ifold < fold.size(); ifold++)
   {
     if (ifold < path.size())
@@ -931,8 +991,10 @@ void dsp::LoadToFold::prepare ()
       Reference::To<Extensions> extensions = new Extensions;
       extensions->add_extension( path[ifold] );
     
-      for (unsigned iop=0; iop < operations.size(); iop++)
-	      operations[iop]->add_extensions (extensions);
+      for (unsigned iop=0; iop < fold_operations.size(); iop++)
+      {
+	      fold_operations[iop]->add_extensions (extensions);
+      }
     
       fold[ifold]->get_output()->set_extensions (extensions);
     }
@@ -1075,7 +1137,14 @@ void dsp::LoadToFold::end_of_data ()
 {
   // ensure that remaining threads are not left waiting
   for (unsigned ifold=0; ifold < fold.size(); ifold++)
+  {
     fold[ifold]->finish ();
+  }
+  for (unsigned izoom=0; izoom < zoom_filterbank.size(); izoom++)
+  {
+    zoom_filterbank[izoom]->finish ();
+  }
+
 }
 
 void setup (dsp::Fold* fold)
@@ -1144,6 +1213,9 @@ void dsp::LoadToFold::build_fold (TimeSeries* to_fold)
   if (config->asynchronous_fold)
     asynch_fold.resize( nfold );
 
+  std::vector< Reference::To<dsp::Operation> > fold_operations = 
+    remove_operations ( operations, zoom_operations);
+
   for (unsigned ifold=0; ifold < nfold; ifold++)
   {
     build_fold (fold[ifold], get_unloader(ifold));
@@ -1153,7 +1225,7 @@ void dsp::LoadToFold::build_fold (TimeSeries* to_fold)
       so that each path will contain only one Fold instance.
     */
 
-    path[ifold] = new SignalPath (operations);
+    path[ifold] = new SignalPath (fold_operations);
     path[ifold]->add( fold[ifold] );
 
     configure_fold (ifold, to_fold);
@@ -1164,8 +1236,9 @@ dsp::PhaseSeriesUnloader*
 dsp::LoadToFold::get_unloader (unsigned ifold, bool zoom)
 {
 
-  std::vector<Reference::To<PhaseSeriesUnloader> >& m_unloader = 
-    zoom ? zoom_unloader : unloader;
+  //std::vector<Reference::To<PhaseSeriesUnloader> >& m_unloader = 
+  //  zoom ? zoom_unloader : unloader;
+  std::vector<Reference::To<PhaseSeriesUnloader> >& m_unloader = unloader;
 
   if (ifold == m_unloader.size())
     m_unloader.push_back( NULL );
@@ -1189,7 +1262,7 @@ dsp::LoadToFold::get_unloader (unsigned ifold, bool zoom)
 void dsp::LoadToFold::build_fold (Reference::To<Fold>& fold,
                                   PhaseSeriesUnloader* unloader) try
 {
-  if (Operation::verbose)
+  //if (Operation::verbose)
     cerr << "dsp::LoadToFold::build_fold input ptr=" << fold.ptr()
 	 << " unloader ptr=" << unloader << endl;
 
@@ -1608,7 +1681,10 @@ void dsp::LoadToFold::finish () try
     phased_filterbank -> normalize_output ();
   }
 
-  for (unsigned i=0; i < zoom_filterbank.size(); ++i) {
+  // TODO -- will this work for non-multithread output?
+  /*
+  for (unsigned i=0; i < zoom_filterbank.size(); ++i)
+  {
     if (Operation::verbose)
       cerr << "Fine-tuning PhaseLockedFilterbank channels " << i+1 << endl;
     // apply additional zoom by trimming channels outside of band
@@ -1627,6 +1703,7 @@ void dsp::LoadToFold::finish () try
       cerr << "Writing out zoom-mode filterbank "<<i+1 << endl;
     zoom_filterbank[i]->finish();
   }
+  */
 
   SingleThread::finish();
 
@@ -1646,7 +1723,8 @@ void dsp::LoadToFold::finish () try
     for (unsigned i=0; i < zoom_filterbank.size(); ++i) {
       if (Operation::verbose)
         cerr << "Creating zoom archive " << i+1 << endl;
-      Archiver* archiver = dynamic_cast<Archiver*>(zoom_unloader[i].get());
+      //Archiver* archiver = dynamic_cast<Archiver*>(zoom_unloader[i].get());
+      Archiver* archiver = dynamic_cast<Archiver*>(unloader[i].get());
       archiver->unload ( zoom_filterbank[i]->get_result() );
     }
 

@@ -61,6 +61,8 @@ namespace dsp {
     template <class T>
     bool prepare_subint_archival ();
 
+    bool prepare_zoom_subint_archival ();
+
 
   };
 
