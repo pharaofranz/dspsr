@@ -27,7 +27,7 @@ nobase_include_HEADERS = dsp/ACFilterbank.h dsp/Detection.h	       \
 libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
 	cross_detect.ic stokes_detect.c stokes_detect.h		     \
 	stokes_detect.ic ACFilterbank.C TScrunch.C      \
-	TimeOrder.C Apodization.C AutoCorrelation.C Filterbank.C     \
+	TimeOrder.C Apodization.C AutoCorrelation.C Filterbank.cc     \
 	IncoherentFilterbank.C Bandpass.C LevelMonitor.C RFIFilter.C \
 	Chomper.C Response.C ResponseProduct.C Convolution.C	     \
 	Dedispersion.C SampleDelay.C DedispersionHistory.C	     \
