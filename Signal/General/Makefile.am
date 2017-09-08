@@ -34,7 +34,7 @@ libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
 	Shape.C DedispersionSampleDelay.C Detection.C Rescale.C	     \
 	PScrunch.C BandpassMonitor.C FourthMoment.C Stats.C	     \
 	PolnCalibration.C Dump.C OptimalFFT.C FScrunch.C	     \
-	FilterbankBench.C OptimalFilterbank.C FilterbankConfig.C \
+	FilterbankBench.C OptimalFilterbank.C FilterbankConfig.cc \
 	FZoom.C GeometricDelay.C mfilter.c \
 	TFPFilterbank.C RFIZapper.C SKFilterbank.C \
 	Resize.C SKDetector.C SKMasker.C \

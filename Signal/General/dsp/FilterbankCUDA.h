@@ -17,71 +17,67 @@
 
 #include <cufft.h>
 
-namespace CUDA
+class elapsed
 {
-  class elapsed
-  {
-  public:
+    public:
     elapsed ();
     void wrt (cudaEvent_t before);
-
+    
     double total;
     cudaEvent_t after;
-  };
+};
 
-  //! Discrete convolution filterbank step implemented using CUDA streams
-  class FilterbankEngine : public dsp::Filterbank::Engine
-  {
+//! Discrete convolution filterbank step implemented using CUDA streams
+class FilterbankEngineCUDA : public dsp::Filterbank::Engine
+{
     unsigned nstream;
-
-  public:
-
+    
+    public:
+    
     //! Default Constructor
-    FilterbankEngine (cudaStream_t stream);
-
-    ~FilterbankEngine ();
-
+    FilterbankEngineCUDA (cudaStream_t stream);
+    
+    ~FilterbankEngineCUDA ();
+    
     void setup (dsp::Filterbank*);
     void set_scratch (float *);
-
+    
     void perform (const dsp::TimeSeries* in, dsp::TimeSeries* out,
                   uint64_t npart, uint64_t in_step, uint64_t out_step);
-
+    
     void finish ();
-
-  protected:
-
+    
+    protected:
+    
     //! forward fft plan 
     cufftHandle plan_fwd;
-
+    
     //! backward fft plan
     cufftHandle plan_bwd;
-
+    
     //! Complex-valued data
     bool real_to_complex;
-
+    
     //! inplace FFT in CUDA memory
     float2* d_fft;
-
+    
     //! convolution kernel in CUDA memory
     float2* d_kernel;
-
+    
     //! device scratch sapce
     float* scratch;
-
+    
     unsigned nchan_subband;
     unsigned freq_res;
     unsigned nfilt_pos;
     unsigned nkeep;
-
+    
     LaunchConfig1D multiply;
-
+    
     cudaStream_t stream;
-
+    
     bool verbose;
-
-  };
-
-}
+    
+};
 
 #endif
