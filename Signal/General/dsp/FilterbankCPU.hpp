@@ -8,8 +8,18 @@
 #include "dsp/FilterbankEngine.h"
 //#include "dsp/LaunchConfig.h"
 
-class FilterbankEngine : public dsp::Filterbank::Engine
+class FilterbankEngineCPU : public dsp::Filterbank::Engine
 {
+    public:
+    FilterbankEngineCPU();
+    ~FilterbankEngineCPU();
+    
+    void setup (dsp::Filterbank*);
+    
+    void perform (const dsp::TimeSeries* in, dsp::TimeSeries* out,
+                  uint64_t npart, uint64_t in_step, uint64_t out_step);
+    
+    void finish ();
     
 };
 
