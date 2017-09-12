@@ -15,6 +15,8 @@ class FilterbankEngineCPU : public dsp::Filterbank::Engine
     ~FilterbankEngineCPU();
     
     void setup (dsp::Filterbank*);
+
+    void set_scratch(float*);
     
     void perform (const dsp::TimeSeries* in, dsp::TimeSeries* out,
                   uint64_t npart, uint64_t in_step, uint64_t out_step);

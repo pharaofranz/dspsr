@@ -12,6 +12,11 @@ FilterbankEngineCPU::~FilterbankEngineCPU()
 	//
 }
 
+void FilterbankEngineCPU::set_scratch(float*)
+{
+	//
+}
+
 void FilterbankEngineCPU::setup(dsp::Filterbank*)
 {
 	//
