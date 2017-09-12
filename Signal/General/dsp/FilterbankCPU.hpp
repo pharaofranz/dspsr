@@ -6,6 +6,8 @@
 #define __FilterbankCPU_hpp
 
 #include "dsp/FilterbankEngine.h"
+//
+#include "dsp/Transformation.h"
 //#include "dsp/LaunchConfig.h"
 
 class FilterbankEngineCPU : public dsp::Filterbank::Engine
@@ -14,12 +16,30 @@ class FilterbankEngineCPU : public dsp::Filterbank::Engine
     FilterbankEngineCPU();
     ~FilterbankEngineCPU();
     
-    void setup (dsp::Filterbank*);
+    void setup(dsp::Filterbank* filterbank);
     
-    void perform (const dsp::TimeSeries* in, dsp::TimeSeries* out,
-                  uint64_t npart, uint64_t in_step, uint64_t out_step);
+    void set_scratch (float* scratch);
     
-    void finish ();
+    void perform(const dsp::TimeSeries* in, dsp::TimeSeries* out,
+                 uint64_t npart, uint64_t in_step, uint64_t out_step);
+    
+    void finish();
+    
+    protected:
+    unsigned _frequencyResolution;
+    unsigned _nChannelSubbands;
+    bool _isRealToComplex;
+    unsigned _nPointsToKeep;
+    double _scaleFactor;
+    unsigned _nFftPoints;
+    unsigned _nFftSamples;
+    unsigned _nSampleOverlap;
+    unsigned _nSampleStep;
+    //
+    FTransform::Plan* _forward;
+    FTransform::Plan* _backward;
+    //
+    float* _scratch;
     
 };
 
