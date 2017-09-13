@@ -263,6 +263,13 @@ void dsp::Filterbank::computeSampleCounts()
     TESTING_LOG("computeSampleCounts - start");
     //! Number of channels outputted per input channel
     nchan_subband = nchan / input->get_nchan();
+    //
+    nfilt_pos = 0;
+    nfilt_neg = 0;
+    nfilt_tot = 0;
+    freq_res = 0;
+    n_fft = 0;
+    //
     if(response) {
         //! Complex samples dropped from beginning of cyclical convolution result
         nfilt_pos = response->get_impulse_pos();
@@ -273,7 +280,7 @@ void dsp::Filterbank::computeSampleCounts()
         //! Frequency resolution factor
         freq_res = response->get_ndat();
         //! number of complex values in the result of the first fft
-        unsigned n_fft = nchan_subband * freq_res;
+        n_fft = nchan_subband * freq_res;
     }
     if(input->get_state() == Signal::Nyquist) {
         nsamp_fft = 2 * n_fft;
