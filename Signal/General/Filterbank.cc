@@ -23,6 +23,8 @@ using namespace std;
 
 // #define _DEBUG 1
 
+#define TESTING_LOG(s) cerr << s << endl
+
 dsp::Filterbank::Filterbank (const char* name, Behaviour behaviour)
 : Convolution (name, behaviour)
 {
@@ -54,6 +56,7 @@ void dsp::Filterbank::prepare ()
 */
 void dsp::Filterbank::make_preparations ()
 {
+    TESTING_LOG("make_preparations - start");
     computeSampleCounts();
     computeScaleFactor();
     if(has_buffering_policy()) {
@@ -65,6 +68,7 @@ void dsp::Filterbank::make_preparations ()
     } else {
         setupFftPlans();
     }
+    TESTING_LOG("make_preparations - end");
 }
 
 void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
@@ -236,15 +240,18 @@ void dsp::Filterbank::resize_output (bool reserve_extra)
 
 void dsp::Filterbank::computeScaleFactor()
 {
+    TESTING_LOG("computeScaleFactor - start");
     if (FTransform::get_norm() == FTransform::unnormalized) {
         scalefac = double(n_fft) * double(freq_res);
     } else if (FTransform::get_norm() == FTransform::normalized) {
         scalefac = double(n_fft) / double(freq_res);
     }
+    TESTING_LOG("computeScaleFactor - end");
 }
 
 void dsp::Filterbank::computeSampleCounts()
 {
+    TESTING_LOG("computeSampleCounts - start");
     //! Number of channels outputted per input channel
     nchan_subband = nchan / input->get_nchan();
     if(response) {
@@ -268,10 +275,12 @@ void dsp::Filterbank::computeSampleCounts()
     }
     //! number of timesamples between start of each big fft
     nsamp_step = nsamp_fft - nsamp_overlap;
+    TESTING_LOG("computeSampleCounts - end");
 }
 
 void dsp::Filterbank::setupFftPlans()
 {
+    TESTING_LOG("setupFftPlans - start");
     using namespace FTransform;
     OptimalFFT* optimal = 0;
     if(response && response->has_optimal_fft()) {
@@ -291,6 +300,7 @@ void dsp::Filterbank::setupFftPlans()
     if(freq_res > 1) {
         backward = Agent::current->get_plan(freq_res, FTransform::bcc);
     }
+    TESTING_LOG("setupFftPlans - end");
 }
 
 void dsp::Filterbank::transformation ()
