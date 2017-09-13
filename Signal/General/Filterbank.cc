@@ -24,6 +24,7 @@ using namespace std;
 // #define _DEBUG 1
 
 #define TESTING_LOG(s) cerr << s << endl
+#define TESTING_LOG_LINE cerr << __LINE__ << ":" << __FUNCTION__ << endl
 
 dsp::Filterbank::Filterbank (const char* name, Behaviour behaviour)
 : Convolution (name, behaviour)
@@ -73,6 +74,7 @@ void dsp::Filterbank::make_preparations ()
 
 void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
 {
+    TESTING_LOG("prepare_output - start");
     if (set_ndat)
     {
         if (verbose)
@@ -84,10 +86,12 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
         output->set_state( Signal::Analytic);
         output->resize( ndat );
     }
+    TESTING_LOG_LINE;
     
     WeightedTimeSeries* weighted_output;
     weighted_output = dynamic_cast<WeightedTimeSeries*> (output.get());
     
+    TESTING_LOG_LINE;
     /* the problem: copy_configuration copies the weights array, which
        results in a call to resize_weights, which sets some offsets
        according to the reserve (for later prepend).  However, the
@@ -96,25 +100,25 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
        that will be set later */
     
     unsigned tres_ratio = nsamp_fft / freq_res;
-    
+    TESTING_LOG_LINE;
     if (weighted_output)
         weighted_output->set_reserve_kludge_factor (tres_ratio);
-    
+    TESTING_LOG_LINE;
     output->copy_configuration ( get_input() );
     
     output->set_nchan( nchan );
     output->set_ndim( 2 );
     output->set_state( Signal::Analytic );
-    
+    TESTING_LOG_LINE;
     custom_prepare ();
-    
+    TESTING_LOG_LINE;
     if (weighted_output)
     {
         weighted_output->set_reserve_kludge_factor (1);
         weighted_output->convolve_weights (nsamp_fft, nsamp_step);
         weighted_output->scrunch_weights (tres_ratio);
     }
-    
+    TESTING_LOG_LINE;
     if (set_ndat)
     {
         if (verbose)
@@ -129,16 +133,16 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
             cerr << "dsp::Filterbank::prepare_output scrunch ndat=" << ndat << endl;
         output->resize (ndat);
     }
-    
+    TESTING_LOG_LINE;
     if (verbose)
         cerr << "dsp::Filterbank::prepare_output output ndat="
         << output->get_ndat() << endl;
-    
+    TESTING_LOG_LINE;
     output->rescale (scalefac);
-    
+    TESTING_LOG_LINE;
     if (verbose) cerr << "dsp::Filterbank::prepare_output scale="
         << output->get_scale() <<endl;
-    
+    TESTING_LOG_LINE;
     /*
      * output data will have new sampling rate
      * NOTE: that nsamp_fft already contains the extra factor of two required
@@ -146,15 +150,16 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
      */
     double ratechange = double(freq_res) / double (nsamp_fft);
     output->set_rate (input->get_rate() * ratechange);
-    
+    TESTING_LOG_LINE;
     if (freq_res == 1)
         output->set_dual_sideband (true);
-    
+    TESTING_LOG_LINE;
     /*
      * if freq_res is even, then each sub-band will be centred on a frequency
      * that lies on a spectral bin *edge* - not the centre of the spectral bin
      */
     output->set_dc_centred (freq_res%2);
+    TESTING_LOG_LINE;
     
 #if 0
     // the centre frequency of each sub-band will be offset
@@ -162,7 +167,7 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
     double shift = double(freq_res-1)/double(freq_res);
     output->set_centre_frequency_offset ( 0.5*channel_bandwidth*shift );
 #endif
-    
+    TESTING_LOG_LINE;
     // dual sideband data produces a band swapped result
     if (input->get_dual_sideband())
     {
@@ -171,20 +176,21 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
         else
             output->set_swap (true);
     }
-    
+    TESTING_LOG_LINE;
     // increment the start time by the number of samples dropped from the fft
     
     //cerr << "FILTERBANK OFFSET START TIME=" << nfilt_pos << endl;
     
     output->change_start_time (nfilt_pos);
-    
+    TESTING_LOG_LINE;
     if (verbose)
         cerr << "dsp::Filterbank::prepare_output start time += "
         << nfilt_pos << " samps -> " << output->get_start_time() << endl;
-    
+    TESTING_LOG_LINE;
     // enable the Response to record its effect on the output Timeseries
     if (response)
         response->mark (output);
+    TESTING_LOG("prepare_output - end");
 }
 
 void dsp::Filterbank::reserve ()
