@@ -23,8 +23,13 @@ using namespace std;
 
 // #define _DEBUG 1
 
+#if 0
 #define TESTING_LOG(s) cerr << s << endl
 #define TESTING_LOG_LINE cerr << __LINE__ << ":" << __FUNCTION__ << endl
+#else 
+#define TESTING_LOG(s)
+#define TESTING_LOG_LINE
+#endif
 
 dsp::Filterbank::Filterbank (const char* name, Behaviour behaviour)
 : Convolution (name, behaviour)
@@ -283,7 +288,6 @@ void dsp::Filterbank::computeSampleCounts()
     }
 	//! number of complex values in the result of the first fft
 	n_fft = nchan_subband * freq_res;
-	cerr << "n_fft set to " << nchan_subband << " * " << freq_res << " = " << n_fft << endl;
     if(input->get_state() == Signal::Nyquist) {
         nsamp_fft = 2 * n_fft;
         nsamp_overlap = 2 * nfilt_tot * nchan_subband;
