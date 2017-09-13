@@ -104,8 +104,8 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
        This kludge allows the offsets to reflect the correct values
        that will be set later */
     
-    cerr << "nsamp_fft = " << nsamp_fft << endl;
-    cerr << "freq_res = " << freq_res << endl;
+    //cerr << "nsamp_fft = " << nsamp_fft << endl;
+    //cerr << "freq_res = " << freq_res << endl;
     
     unsigned tres_ratio = nsamp_fft / freq_res;
     TESTING_LOG_LINE;
