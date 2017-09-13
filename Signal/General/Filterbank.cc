@@ -267,7 +267,7 @@ void dsp::Filterbank::computeSampleCounts()
     nfilt_pos = 0;
     nfilt_neg = 0;
     nfilt_tot = 0;
-    freq_res = 0;
+    freq_res = 1;
     n_fft = 0;
     //
     if(response) {
@@ -279,9 +279,9 @@ void dsp::Filterbank::computeSampleCounts()
         nfilt_tot = nfilt_pos + nfilt_neg;
         //! Frequency resolution factor
         freq_res = response->get_ndat();
-        //! number of complex values in the result of the first fft
-        n_fft = nchan_subband * freq_res;
     }
+	//! number of complex values in the result of the first fft
+	n_fft = nchan_subband * freq_res;
     if(input->get_state() == Signal::Nyquist) {
         nsamp_fft = 2 * n_fft;
         nsamp_overlap = 2 * nfilt_tot * nchan_subband;
