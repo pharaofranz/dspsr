@@ -15,7 +15,7 @@
 #if HAVE_CUDA
 #include "dsp/FilterbankCUDA.h"
 #include "dsp/MemoryCUDA.h"
-#elif
+#else
 #include "dsp/FilterbankCPU.hpp"
 #endif
 
@@ -125,7 +125,7 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
     gpu_scratch->set_memory (device_memory);
     filterbank->set_scratch (gpu_scratch);
   }
-#elif
+#else
 	filterbank->set_engine(new FilterbankEngineCPU());
 #endif
 
