@@ -271,6 +271,7 @@ void dsp::Filterbank::computeSampleCounts()
     n_fft = 0;
     //
     if(response) {
+		response->match(input, nchan);
         //! Complex samples dropped from beginning of cyclical convolution result
         nfilt_pos = response->get_impulse_pos();
         //! Complex samples dropped from end of cyclical convolution result
