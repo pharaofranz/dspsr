@@ -65,6 +65,7 @@ void dsp::Filterbank::make_preparations ()
     TESTING_LOG("make_preparations - start");
     computeSampleCounts();
     computeScaleFactor();
+	matrix_convolution = false;
     if(has_buffering_policy()) {
         get_buffering_policy()->set_minimum_samples (nsamp_fft);
     }
@@ -74,6 +75,20 @@ void dsp::Filterbank::make_preparations ()
     } else {
         setupFftPlans();
     }
+	// the engine should delete the passband if it doesn't support this feature
+	if(passband) {
+		if (response) {
+			passband->match(response);
+		}
+		unsigned passband_npol = input->get_npol();
+		if(matrix_convolution) {
+			passband_npol = 4;
+		}
+		passband->resize(passband_npol, input->get_nchan(), n_fft, 1);
+		if(!response) {
+			passband->match(input);
+		}
+	}
     TESTING_LOG("make_preparations - end");
 }
 
