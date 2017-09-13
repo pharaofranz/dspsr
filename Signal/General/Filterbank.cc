@@ -282,13 +282,16 @@ void dsp::Filterbank::computeSampleCounts()
     }
 	//! number of complex values in the result of the first fft
 	n_fft = nchan_subband * freq_res;
+	cerr << "n_fft set to " << nchan_subband << " * " << freq_res << " = " << n_fft << endl;
     if(input->get_state() == Signal::Nyquist) {
         nsamp_fft = 2 * n_fft;
         nsamp_overlap = 2 * nfilt_tot * nchan_subband;
     } else if(input->get_state() == Signal::Analytic) {
         nsamp_fft = n_fft;
         nsamp_overlap = nfilt_tot * nchan_subband;
-    }
+	} else {
+		cerr << "input state is not set correctly" << endl;
+	}
     //! number of timesamples between start of each big fft
     nsamp_step = nsamp_fft - nsamp_overlap;
     TESTING_LOG("computeSampleCounts - end");
