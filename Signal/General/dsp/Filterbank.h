@@ -1,7 +1,7 @@
 //-*-C++-*-
 /***************************************************************************
  *
- *   Copyright (C) 2002-2011 by Willem van Straten
+ *   Copyright(C) 2002-2011 by Willem van Straten
  *   Licensed under the Academic Free License version 2.1
  *
  ***************************************************************************/
@@ -27,51 +27,51 @@ namespace dsp {
         class Config;
         
         //! Null constructor
-        Filterbank (const char* name = "Filterbank", Behaviour type = outofplace);
+        Filterbank(const char* name = "Filterbank", Behaviour type = outofplace);
         
         //! Prepare all relevant attributes
-        void prepare ();
+        void prepare();
         
         //! Reserve the maximum amount of output space required
-        void reserve ();
+        void reserve();
         
         //! Get the minimum number of samples required for operation
-        uint64_t get_minimum_samples () { return nsamp_fft; }
+        uint64_t get_minimum_samples() { return nsamp_fft; }
         
         //! Get the minimum number of samples lost
-        uint64_t get_minimum_samples_lost () { return nsamp_overlap; }
+        uint64_t get_minimum_samples_lost() { return nsamp_overlap; }
         
         //! Set the number of channels into which the input will be divided
-        void set_nchan (unsigned _nchan) { nchan = _nchan; }
+        void set_nchan(unsigned _nchan) { nchan = _nchan; }
         
         //! Get the number of channels into which the input will be divided
-        unsigned get_nchan () const { return nchan; }
+        unsigned get_nchan() const { return nchan; }
         
-        unsigned get_nchan_subband () const {return nchan_subband; }
+        unsigned get_nchan_subband() const {return nchan_subband; }
         
         //! Set the frequency resolution factor
-        void set_freq_res (unsigned _freq_res) { freq_res = _freq_res; }
-        void set_frequency_resolution (unsigned fres) { freq_res = fres; }
+        void set_freq_res(unsigned _freq_res) { freq_res = _freq_res; }
+        void set_frequency_resolution(unsigned fres) { freq_res = fres; }
         
         //! Get the frequency resolution factor
-        unsigned get_freq_res () const { return freq_res; } 
-        unsigned get_frequency_resolution () const { return freq_res; }
+        unsigned get_freq_res() const { return freq_res; } 
+        unsigned get_frequency_resolution() const { return freq_res; }
         
-        void set_frequency_overlap (unsigned over) { overlap_ratio = over; }
-        unsigned get_frequency_overlap () const { return (unsigned) overlap_ratio; }
+        //void set_frequency_overlap(unsigned over) { overlap_ratio = over; }
+        //unsigned get_frequency_overlap() const { return(unsigned) overlap_ratio; }
         
         //! Engine used to perform discrete convolution step
         class Engine;
-        void set_engine (Engine*);
+        void set_engine(Engine*);
         
         protected:
         
         //! Perform the convolution transformation on the input TimeSeries
-        virtual void transformation ();
+        virtual void transformation();
         
         //! Perform the filterbank step 
-        virtual void filterbank ();
-        virtual void custom_prepare () {}
+        //virtual void filterbank();
+        //virtual void custom_prepare() {}
         
         //! Number of channels into which the input will be divided
         //! This is the final number of channels in the output
@@ -84,19 +84,24 @@ namespace dsp {
         unsigned nchan_subband;
         
         //! Frequency channel overlap ratio
-        double overlap_ratio;
+        //double overlap_ratio;
         
-        //! Interface to alternate processing engine (e.g. GPU)
-        Reference::To<Engine> engine;
+        //! Interface to alternate processing engine(e.g. GPU)
+        //Reference::To<Engine> engine;
         
         private:
         
-        void make_preparations ();
-        void prepare_output (uint64_t ndat = 0, bool set_ndat = false);
-        void resize_output (bool reserve_extra = false);
-        void computeScaleFactor();
-        void computeSampleCounts();
-        void setupFftPlans();
+        void _makePreparations();
+        void _prepareOutput(uint64_t ndat = 0, bool set_ndat = false);
+        void _resizeOutput(bool reserve_extra = false);
+        void _computeScaleFactor();
+        void _computeSampleCounts();
+        void _setupFftPlans();
+        //! Perform the filterbank step 
+        void _filterbank();
+        void _customPrepare() {}
+        //! Interface to alternate processing engine(e.g. GPU)
+        Reference::To<Engine> _engine;
     };
     
 }

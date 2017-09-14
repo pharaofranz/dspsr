@@ -33,11 +33,13 @@ class FilterbankEngineCUDA : public dsp::Filterbank::Engine
     unsigned nstream;
     
     public:
-    
     //! Default Constructor
-    FilterbankEngineCUDA (cudaStream_t stream);
+    FilterbankEngineCUDA (cudaStream_t stream) 
+	: _planForward(0), _planBackward(0), _realToComplex(false), d_fft(0),
+	  _convolutionKernel(0), _nFilterPosition(0)
+	{}
     
-    ~FilterbankEngineCUDA ();
+    ~FilterbankEngineCUDA () {}
     
     void setup (dsp::Filterbank*);
     void set_scratch (float *);
@@ -47,37 +49,36 @@ class FilterbankEngineCUDA : public dsp::Filterbank::Engine
     
     void finish ();
     
-    protected:
+	protected:
+    bool verbose;
     
+	private:
     //! forward fft plan 
-    cufftHandle plan_fwd;
+    cufftHandle _planForward;
     
     //! backward fft plan
-    cufftHandle plan_bwd;
+    cufftHandle _planBackward;
     
     //! Complex-valued data
-    bool real_to_complex;
+    bool _realToComplex;
     
     //! inplace FFT in CUDA memory
     float2* d_fft;
     
     //! convolution kernel in CUDA memory
-    float2* d_kernel;
+    float2* _convolutionKernel;
     
     //! device scratch sapce
     float* scratch;
     
-    unsigned nchan_subband;
-    unsigned freq_res;
-    unsigned nfilt_pos;
-    unsigned nkeep;
+    unsigned _nChannelSubbands;
+    unsigned _frequencyResolution;
+    unsigned _nFilterPosition;
+    unsigned _nKeep;
     
-    LaunchConfig1D multiply;
+	CUDA::LaunchConfig1D _multiply;
     
-    cudaStream_t stream;
-    
-    bool verbose;
-    
+    cudaStream_t _stream;
 };
 
 #endif
