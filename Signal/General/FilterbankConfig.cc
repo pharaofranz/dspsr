@@ -24,15 +24,6 @@ using namespace std;
 
 using dsp::Filterbank;
 
-Filterbank::Config::Config ()
-{
-  memory = 0;
-  stream = 0; //(void*)-1;
-
-  nchan = 1;
-  freq_res = 0;  // unspecified
-  when = After;  // not good, but the original default
-}
 
 std::ostream& dsp::operator << (std::ostream& os,
 				const Filterbank::Config& config)
@@ -83,21 +74,10 @@ std::istream& dsp::operator >> (std::istream& is, Filterbank::Config& config)
   {
     unsigned nfft;
     is >> nfft;
-    config.set_freq_res (nfft);
+    config.set_freq_res(nfft);
   }
 
   return is;
-}
-
-//! Set the device on which the unpacker will operate
-void dsp::Filterbank::Config::set_device (Memory* mem)
-{
-  memory = mem;
-}
-
-void dsp::Filterbank::Config::set_stream (void* ptr)
-{
-  stream = ptr;
 }
 
 //! Return a new Filterbank instance and configure it
@@ -107,17 +87,17 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
 
   filterbank->set_nchan( get_nchan() );
 
-  if (freq_res)
-    filterbank->set_frequency_resolution ( freq_res );
+  if (_frequencyResolution)
+    filterbank->set_frequency_resolution ( _frequencyResolution );
 
 #if HAVE_CUDA
 
   CUDA::DeviceMemory* device_memory = 
-    dynamic_cast< CUDA::DeviceMemory*> ( memory );
+    dynamic_cast< CUDA::DeviceMemory*> ( _memory );
 
   if ( device_memory )
   {
-    cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>( stream );
+    cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>( _stream );
 
     filterbank->set_engine (new FilterbankEngineCUDA (cuda_stream));
 
