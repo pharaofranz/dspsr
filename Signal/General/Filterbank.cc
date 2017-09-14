@@ -75,6 +75,8 @@ void dsp::Filterbank::make_preparations ()
     } else {
         setupFftPlans();
     }
+    set_passband(NULL);
+    /*
 	// the engine should delete the passband if it doesn't support this feature
 	if(passband) {
 		if (response) {
@@ -88,7 +90,8 @@ void dsp::Filterbank::make_preparations ()
 		if(!response) {
 			passband->match(input);
 		}
-	}
+    }
+    */
     TESTING_LOG("make_preparations - end");
 }
 
