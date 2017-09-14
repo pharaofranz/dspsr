@@ -75,20 +75,7 @@ void dsp::Filterbank::make_preparations ()
     } else {
         setupFftPlans();
     }
-	// the engine should delete the passband if it doesn't support this feature
-	if(passband) {
-		if (response) {
-			passband->match(response);
-		}
-		unsigned passband_npol = input->get_npol();
-		if(matrix_convolution) {
-			passband_npol = 4;
-		}
-		passband->resize(passband_npol, input->get_nchan(), n_fft, 1);
-		if(!response) {
-			passband->match(input);
-		}
-	}
+    set_passband(NULL);
     TESTING_LOG("make_preparations - end");
 }
 
@@ -269,13 +256,9 @@ void dsp::Filterbank::resize_output (bool reserve_extra)
 
 void dsp::Filterbank::computeScaleFactor()
 {
-    TESTING_LOG("computeScaleFactor - start");
-    if (FTransform::get_norm() == FTransform::unnormalized) {
-        scalefac = double(n_fft) * double(freq_res);
-    } else if (FTransform::get_norm() == FTransform::normalized) {
-        scalefac = double(n_fft) / double(freq_res);
-    }
-    TESTING_LOG("computeScaleFactor - end");
+    scalefac =  (FTransform::get_norm() == FTransform::unnormalized) ?
+                (double(n_fft) * double(freq_res)) :
+                (double(n_fft) / double(freq_res));
 }
 
 void dsp::Filterbank::computeSampleCounts()
@@ -302,16 +285,12 @@ void dsp::Filterbank::computeSampleCounts()
         freq_res = response->get_ndat();
     }
 	//! number of complex values in the result of the first fft
-	n_fft = nchan_subband * freq_res;
-    if(input->get_state() == Signal::Nyquist) {
-        nsamp_fft = 2 * n_fft;
-        nsamp_overlap = 2 * nfilt_tot * nchan_subband;
-    } else if(input->get_state() == Signal::Analytic) {
-        nsamp_fft = n_fft;
-        nsamp_overlap = nfilt_tot * nchan_subband;
-	} else {
-		cerr << "input state is not set correctly" << endl;
-	}
+    n_fft = nchan_subband * freq_res;
+    //
+    const bool isNyquist = (input->get_state() == Signal::Nyquist);
+    const int fftPointsPerSample = isNyquist ? 2 : 1;
+    nsamp_fft = fftPointsPerSample * n_fft;
+    nsamp_overlap = fftPointsPerSample * nfilt_tot * nchan_subband;
     //! number of timesamples between start of each big fft
     nsamp_step = nsamp_fft - nsamp_overlap;
     TESTING_LOG("computeSampleCounts - end");
@@ -324,15 +303,12 @@ void dsp::Filterbank::setupFftPlans()
     OptimalFFT* optimal = 0;
     if(response && response->has_optimal_fft()) {
         optimal = response->get_optimal_fft();
+        if(optimal) {
+            FTransform::set_library(optimal->get_library(nsamp_fft));
+        }
     }
-    if(optimal) {
-        FTransform::set_library(optimal->get_library(nsamp_fft));
-    }
-    if(input->get_state() == Signal::Nyquist) {
-        forward = Agent::current->get_plan(nsamp_fft, FTransform::frc);
-    } else {
-        forward = Agent::current->get_plan(nsamp_fft, FTransform::fcc);
-    }
+    const bool isRealToComplex = (input->get_state() == Signal::Nyquist);
+    forward = Agent::current->get_plan(nsamp_fft, isRealToComplex ? FTransform::frc : FTransform::fcc);
     if(optimal) {
         FTransform::set_library(optimal->get_library(freq_res));
     }
