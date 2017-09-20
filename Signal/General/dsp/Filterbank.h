@@ -97,9 +97,17 @@ namespace dsp {
         //! Perform the filterbank step 
 		void _initFilterbank();
         void _filterbank();
+		void _filterbankCPU();
         
 		//! Interface to alternate processing engine(e.g. GPU)
         Reference::To<Engine> _engine;
+
+		float* _complexSpectrum[2];
+		unsigned long in_step;
+		unsigned long out_step;
+
+		//! points kept from each small fft
+		unsigned _nkeep;
     };
     
 }
