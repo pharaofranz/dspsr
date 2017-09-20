@@ -230,13 +230,13 @@ inline void dsp::Filterbank::_resizeOutput(bool reserve_extra)
 		npart += 2;
 
 	// points kept from each small fft
-	unsigned nkeep = freq_res - nfilt_tot;
+	_nChannelsSmallFft = freq_res - nfilt_tot;
 
-	uint64_t output_ndat = npart * nkeep;
+	uint64_t output_ndat = npart * _nChannelsSmallFft;
 
 	cerrStream << isVerbose << "dsp::Filterbank::reserve input ndat=" << ndat 
 		<< " overlap=" << nsamp_overlap << " step=" << nsamp_step
-		<< " reserve=" << reserve_extra << " nkeep=" << nkeep
+		<< " reserve=" << reserve_extra << " _nChannelsSmallFft=" << _nChannelsSmallFft
 		<< " npart=" << npart << " output ndat=" << output_ndat << endl;
 
 #if DEBUGGING_OVERLAP
@@ -332,17 +332,17 @@ void dsp::Filterbank::transformation()
 	uint64_t output_ndat = output->get_ndat();
 
 	// points kept from each small fft
-	_nkeep = freq_res - nfilt_tot;
+	//_nChannelsSmallFft = freq_res - nfilt_tot;
 
 	cerrStream << isVerbose << "dsp::Filterbank::transformation npart=" << npart 
-		<< " _nkeep=" << _nkeep << " output_ndat=" << output_ndat << endl;
+		<< " _nChannelsSmallFft=" << _nChannelsSmallFft << " output_ndat=" << output_ndat << endl;
 
 	// set the input sample
 	int64_t input_sample = input->get_input_sample();
 	if(output_ndat == 0)
 		output->set_input_sample(0);
 	else if(input_sample >= 0)
-		output->set_input_sample((input_sample / nsamp_step) * _nkeep);
+		output->set_input_sample((input_sample / nsamp_step) * _nChannelsSmallFft);
 
 	cerrStream << isVerbose << "dsp::Filterbank::transformation after prepare output"
 		" ndat=" << output->get_ndat() << 
@@ -364,7 +364,7 @@ inline void dsp::Filterbank::_filterbank()
 	in_step = nsamp_step * input->get_ndim();
 
 	// freq_res - nfilt_tot : points kept from each small fft 
-	//_nkeep = freq_res - nfilt_tot;
+	//_nChannelsSmallFft = freq_res - nfilt_tot;
 	// number of floats to step between output from filterbank
 	out_step = (freq_res - nfilt_tot) * 2;
 
@@ -532,7 +532,7 @@ inline void dsp::Filterbank::_filterbankCPU()
 						data_into =(uint64_t*)( output->get_datptr(jchan+ichan, ipol) + out_offset);
 						data_from =(uint64_t*)( c_time + nfilt_pos*2 );  // complex nos.
 
-						for(unsigned ipt=0; ipt < _nkeep; ipt++)
+						for(unsigned ipt=0; ipt < _nChannelsSmallFft; ipt++)
 							data_into[ipt] = data_from[ipt];
 
 					} // for each output channel

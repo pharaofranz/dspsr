@@ -107,7 +107,7 @@ namespace dsp {
 		unsigned long out_step;
 
 		//! points kept from each small fft
-		unsigned _nkeep;
+		unsigned _nChannelsSmallFft;
     };
     
 }
