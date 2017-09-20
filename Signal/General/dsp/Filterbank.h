@@ -12,23 +12,26 @@
 #define __Filterbank_h
 
 #include "dsp/Convolution.h"
+#include <iostream>
 
 namespace dsp {
     
     //! Breaks a single-band TimeSeries into multiple frequency channels
     /* This class implements the coherent filterbank technique described
        in Willem van Straten's thesis.  */
+	//std::ostream _debugMessage(NULL);
     
-    class Filterbank: public Convolution {
+	class Filterbank: public Convolution {
         
         public:
         
         //! Configuration options
         class Config;
+		class DebugPrint;
         
         //! Null constructor
         Filterbank(const char* name = "Filterbank", Behaviour type = outofplace);
-        
+		
         //! Prepare all relevant attributes
         void prepare();
         
@@ -57,21 +60,14 @@ namespace dsp {
         unsigned get_freq_res() const { return freq_res; } 
         unsigned get_frequency_resolution() const { return freq_res; }
         
-        //void set_frequency_overlap(unsigned over) { overlap_ratio = over; }
-        //unsigned get_frequency_overlap() const { return(unsigned) overlap_ratio; }
-        
         //! Engine used to perform discrete convolution step
         class Engine;
         void set_engine(Engine*);
-        
+	    
         protected:
         
         //! Perform the convolution transformation on the input TimeSeries
         virtual void transformation();
-        
-        //! Perform the filterbank step 
-        //virtual void filterbank();
-        //virtual void custom_prepare() {}
         
         //! Number of channels into which the input will be divided
         //! This is the final number of channels in the output
@@ -97,10 +93,12 @@ namespace dsp {
         void _computeScaleFactor();
         void _computeSampleCounts();
         void _setupFftPlans();
+		void _runForwardFft();
         //! Perform the filterbank step 
+		void _initFilterbank();
         void _filterbank();
-        void _customPrepare() {}
-        //! Interface to alternate processing engine(e.g. GPU)
+        
+		//! Interface to alternate processing engine(e.g. GPU)
         Reference::To<Engine> _engine;
     };
     

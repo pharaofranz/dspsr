@@ -23,13 +23,19 @@ using namespace std;
 
 // #define _DEBUG 1
 
-#if 0
+#if 0 
 #define TESTING_LOG(s) cerr << s << endl
 #define TESTING_LOG_LINE cerr << __LINE__ << ":" << __FUNCTION__ << endl
 #else 
 #define TESTING_LOG(s)
 #define TESTING_LOG_LINE
 #endif
+
+ostream cerrStream(NULL);
+
+ostream& isVerbose(ostream &stream) {
+    return (dsp::Filterbank::verbose) ? cerr : stream;
+}
 
 dsp::Filterbank::Filterbank(const char* name, Behaviour behaviour)
 : Convolution(name, behaviour), nchan(0), freq_res(1)
@@ -42,12 +48,12 @@ void dsp::Filterbank::set_engine(Engine* engine)
     _engine = engine;
 }
 
-void dsp::Filterbank::prepare()
+inline void dsp::Filterbank::prepare()
 {
-    if(verbose)
-        cerr << "dsp::Filterbank::prepare" << endl;
+	cerrStream << isVerbose << "dsp::Filterbank::prepare" << endl;
     
     _makePreparations();
+
     prepared = true;
 }
 
@@ -56,7 +62,7 @@ void dsp::Filterbank::prepare()
   These are preparations that could be performed once at the start of
   the data processing
 */
-void dsp::Filterbank::_makePreparations()
+inline void dsp::Filterbank::_makePreparations()
 {
     TESTING_LOG("_makePreparations - start");
     _computeSampleCounts();
@@ -80,9 +86,8 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
     TESTING_LOG("_prepareOutput - start");
     if(set_ndat)
     {
-        if(verbose)
-            cerr << "dsp::Filterbank::_prepareOutput set ndat=" << ndat << endl;
-        
+        cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput set ndat=" 
+			<< ndat << endl;
         output->set_npol( input->get_npol() );
         output->set_nchan( nchan );
         output->set_ndim( 2 );
@@ -116,10 +121,10 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
     output->set_ndim( 2 );
     output->set_state( Signal::Analytic );
     TESTING_LOG_LINE;
-    _customPrepare();
+    //_customPrepare();
     TESTING_LOG_LINE;
     if(weighted_output)
-    {
+	{
         weighted_output->set_reserve_kludge_factor(1);
         weighted_output->convolve_weights(nsamp_fft, nsamp_step);
         weighted_output->scrunch_weights(tres_ratio);
@@ -127,26 +132,25 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
     TESTING_LOG_LINE;
     if(set_ndat)
     {
-        if(verbose)
-            cerr << "dsp::Filterbank::_prepareOutput reset ndat=" << ndat << endl;
+        cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput reset ndat=" 
+			<< ndat << endl;
         output->resize(ndat);
     }
     else
     {
         ndat = input->get_ndat() / tres_ratio;
-        
-        if(verbose)
-            cerr << "dsp::Filterbank::_prepareOutput scrunch ndat=" << ndat << endl;
+	 
+        cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput scrunch ndat=" 
+			<< ndat << endl;
         output->resize(ndat);
     }
     TESTING_LOG_LINE;
-    if(verbose)
-        cerr << "dsp::Filterbank::_prepareOutput output ndat="
+    cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput output ndat="
         << output->get_ndat() << endl;
     TESTING_LOG_LINE;
     output->rescale(scalefac);
     TESTING_LOG_LINE;
-    if(verbose) cerr << "dsp::Filterbank::_prepareOutput scale="
+    cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput scale="
         << output->get_scale() <<endl;
     TESTING_LOG_LINE;
     /*
@@ -189,8 +193,7 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
     
     output->change_start_time(nfilt_pos);
     TESTING_LOG_LINE;
-    if(verbose)
-        cerr << "dsp::Filterbank::_prepareOutput start time += "
+    cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput start time += "
         << nfilt_pos << " samps -> " << output->get_start_time() << endl;
     TESTING_LOG_LINE;
     // enable the Response to record its effect on the output Timeseries
@@ -199,15 +202,14 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
     TESTING_LOG("_prepareOutput - end");
 }
 
-void dsp::Filterbank::reserve()
+inline void dsp::Filterbank::reserve()
 {
-    if(verbose)
-        cerr << "dsp::Filterbank::reserve" << endl;
+    cerrStream << isVerbose << "dsp::Filterbank::reserve" << endl;
     
     _resizeOutput(true);
 }
 
-void dsp::Filterbank::_resizeOutput(bool reserve_extra)
+inline void dsp::Filterbank::_resizeOutput(bool reserve_extra)
 {
     const uint64_t ndat = input->get_ndat();
     
@@ -231,8 +233,7 @@ void dsp::Filterbank::_resizeOutput(bool reserve_extra)
     
     uint64_t output_ndat = npart * nkeep;
     
-    if(verbose)
-        cerr << "dsp::Filterbank::reserve input ndat=" << ndat 
+    cerrStream << isVerbose << "dsp::Filterbank::reserve input ndat=" << ndat 
         << " overlap=" << nsamp_overlap << " step=" << nsamp_step
         << " reserve=" << reserve_extra << " nkeep=" << nkeep
         << " npart=" << npart << " output ndat=" << output_ndat << endl;
@@ -250,14 +251,14 @@ void dsp::Filterbank::_resizeOutput(bool reserve_extra)
     _prepareOutput(output_ndat, true);
 }
 
-void dsp::Filterbank::_computeScaleFactor()
+inline void dsp::Filterbank::_computeScaleFactor()
 {
     scalefac = (FTransform::get_norm() == FTransform::unnormalized) ?
                (double(n_fft) * double(freq_res)) :
                (double(n_fft) / double(freq_res));
 }
 
-void dsp::Filterbank::_computeSampleCounts()
+inline void dsp::Filterbank::_computeSampleCounts()
 {
     TESTING_LOG("computeSampleCounts - start");
     //! Number of channels outputted per input channel
@@ -292,7 +293,7 @@ void dsp::Filterbank::_computeSampleCounts()
     TESTING_LOG("computeSampleCounts - end");
 }
 
-void dsp::Filterbank::_setupFftPlans()
+inline void dsp::Filterbank::_setupFftPlans()
 {
     TESTING_LOG("setupFftPlans - start");
     using namespace FTransform;
@@ -316,9 +317,8 @@ void dsp::Filterbank::_setupFftPlans()
 
 void dsp::Filterbank::transformation()
 {
-    if(verbose)
-        cerr << "dsp::Filterbank::transformation input ndat=" << input->get_ndat()
-        << " nchan=" << input->get_nchan() << endl;
+    cerrStream << isVerbose << "dsp::Filterbank::transformation input ndat=" 
+		<< input->get_ndat() << " nchan=" << input->get_nchan() << endl;
     
     if(!prepared)
         prepare();
@@ -333,8 +333,7 @@ void dsp::Filterbank::transformation()
     // points kept from each small fft
     unsigned nkeep = freq_res - nfilt_tot;
     
-    if(verbose)
-        cerr << "dsp::Filterbank::transformation npart=" << npart 
+    cerrStream << isVerbose << "dsp::Filterbank::transformation npart=" << npart 
         << " nkeep=" << nkeep << " output_ndat=" << output_ndat << endl;
     
     // set the input sample
@@ -344,23 +343,22 @@ void dsp::Filterbank::transformation()
     else if(input_sample >= 0)
         output->set_input_sample((input_sample / nsamp_step) * nkeep);
     
-    if(verbose)
-        cerr << "dsp::Filterbank::transformation after prepare output"
+    cerrStream << isVerbose << "dsp::Filterbank::transformation after prepare output"
         " ndat=" << output->get_ndat() << 
         " input_sample=" << output->get_input_sample() << endl;
     
     if(!npart)
     {
-        if(verbose)
-            cerr << "dsp::Filterbank::transformation empty result" << endl;
+        cerrStream << isVerbose << "dsp::Filterbank::transformation empty result" << endl;
         return;
     }
     
     _filterbank();
 }
 
-void dsp::Filterbank::_filterbank()
+inline void dsp::Filterbank::_filterbank()
 {
+
     // initialize scratch space for FFTs
     unsigned bigfftsize = nchan_subband * freq_res * 2;
     if(input->get_state() == Signal::Nyquist)
@@ -376,12 +374,13 @@ void dsp::Filterbank::_filterbank()
         scratch_needed += bigfftsize;
     
     // divide up the scratch space
-    float* c_spectrum[2];
+	float* c_spectrum[2];
+
     c_spectrum[0] = scratch->space<float>(scratch_needed);
     c_spectrum[1] = c_spectrum[0];
     if(matrix_convolution)
         c_spectrum[1] += bigfftsize;
-    
+	
     float* c_time = c_spectrum[1] + bigfftsize;
     float* windowed_time_domain = c_time + 2 * freq_res;
     
@@ -389,29 +388,27 @@ void dsp::Filterbank::_filterbank()
     if(matrix_convolution)
         cross_pol = 2;
     
-    if(verbose)
-        cerr << "dsp::Filterbank::transformation enter main loop" <<
+    cerrStream << isVerbose << "dsp::Filterbank::transformation enter main loop" <<
         " cpol=" << cross_pol << " npol=" << input->get_npol() <<
         " npart=" << npart  << endl;
     if(_engine) {
-        if(verbose)
-            cerr << "have engine"<<endl;
+        cerrStream << isVerbose << "have engine"<<endl;
     }
     
     // number of floats to step between input to filterbank
-    const unsigned long in_step = nsamp_step * input->get_ndim();
+    unsigned long in_step = nsamp_step * input->get_ndim();
     
     // points kept from each small fft
-    const unsigned nkeep = freq_res - nfilt_tot;
+    unsigned nkeep = freq_res - nfilt_tot;
     
     // number of floats to step between output from filterbank
-    const unsigned long out_step = nkeep * 2;
+    unsigned long out_step = nkeep * 2;
     
     // counters
-    unsigned ipt, ipol, jpol, ichan;
-    uint64_t ipart;
+	unsigned ipt, ipol, jpol, ichan;
+	uint64_t ipart;
     
-    const unsigned npol = input->get_npol();
+    unsigned npol = input->get_npol();
     
     // offsets into input and output
     uint64_t in_offset, out_offset;
@@ -423,7 +420,7 @@ void dsp::Filterbank::_filterbank()
     // do a 64-bit copy
     uint64_t* data_into = NULL;
     uint64_t* data_from = NULL;
-    
+ 
     // /////////////////////////////////////////////////////////////////////
     //
     // PERFORM FILTERBANK VIA ENGINE(e.g. on GPU)
@@ -436,7 +433,8 @@ void dsp::Filterbank::_filterbank()
         if(Operation::record_time)
             _engine->finish();
     }
-    //  cerr << "output ndat=" <<output->get_ndat() << " output ptr=" << output->get_datptr(0,0) << endl;
+    //  cerrStream << isVerbose << "output ndat=" <<output->get_ndat() 
+    //	    << " output ptr=" << output->get_datptr(0,0) << endl;
     
     // /////////////////////////////////////////////////////////////////////
     //
@@ -445,15 +443,14 @@ void dsp::Filterbank::_filterbank()
     // /////////////////////////////////////////////////////////////////////
     else
     {
-        for(unsigned input_ichan=0; input_ichan<input->get_nchan(); input_ichan++)
+        for(int input_ichan=0; input_ichan<input->get_nchan(); input_ichan++)
         {
             
             for(ipart=0; ipart<npart; ipart++)
             {
-#ifdef _DEBUG
-                cerr << "ipart=" << ipart << endl;
-#endif
-                in_offset = ipart * in_step;
+                cerrStream << isVerbose << "ipart=" << ipart << endl;
+                
+				in_offset = ipart * in_step;
                 out_offset = ipart * out_step;
                 
                 for(ipol=0; ipol < npol; ipol++)
@@ -476,8 +473,6 @@ void dsp::Filterbank::_filterbank()
                             forward->frc1d(nsamp_fft, c_spectrum[ipol], time_dom_ptr);
                         else
                             forward->fcc1d(nsamp_fft, c_spectrum[ipol], time_dom_ptr);
-                        
-                        
                     }
                     
                     if(matrix_convolution)
@@ -498,7 +493,7 @@ void dsp::Filterbank::_filterbank()
                                                input_ichan*nchan_subband, nchan_subband);
                     }
                     
-                    for(jpol=0; jpol<cross_pol; jpol++)
+                    for(int jpol=0; jpol<cross_pol; jpol++)
                     {
                         if(matrix_convolution)
                             ipol = jpol;
@@ -515,7 +510,6 @@ void dsp::Filterbank::_filterbank()
                             continue;
                         }
                         
-                        
                         // freq_res > 1 requires a backward fft into the time domain
                         // for each channel
                         
@@ -531,7 +525,7 @@ void dsp::Filterbank::_filterbank()
                             data_into =(uint64_t*)( output->get_datptr(jchan+ichan, ipol) + out_offset);
                             data_from =(uint64_t*)( c_time + nfilt_pos*2 );  // complex nos.
                             
-                            for(ipt=0; ipt < nkeep; ipt++)
+                            for(unsigned ipt=0; ipt < nkeep; ipt++)
                                 data_into[ipt] = data_from[ipt];
                             
                         } // for each output channel
@@ -549,8 +543,6 @@ void dsp::Filterbank::_filterbank()
     if(Operation::record_time && _engine)
         _engine->finish();
     
-    if(verbose)
-        cerr << "dsp::Filterbank::transformation return with output ndat="
+    cerrStream << isVerbose << "dsp::Filterbank::transformation return with output ndat="
         << output->get_ndat() << endl;
 }
-
