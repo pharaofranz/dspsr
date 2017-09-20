@@ -108,6 +108,7 @@ namespace dsp {
 
 		//! points kept from each small fft
 		unsigned _nChannelsSmallFft;
+		unsigned _nInputChannels;
     };
     
 }

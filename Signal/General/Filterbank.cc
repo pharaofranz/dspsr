@@ -181,9 +181,10 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	TESTING_LOG_LINE;
 	// dual sideband data produces a band swapped result
 	if(input->get_dual_sideband())
-	{
-		if(input->get_nchan() > 1)
-			output->set_nsub_swap(input->get_nchan());
+	{ 
+		_nInputChannels = input->get_nchan();
+		if(_nInputChannels > 1)
+			output->set_nsub_swap(_nInputChannels);
 		else
 			output->set_swap(true);
 	}
@@ -262,8 +263,10 @@ inline void dsp::Filterbank::_computeScaleFactor()
 inline void dsp::Filterbank::_computeSampleCounts()
 {
 	TESTING_LOG("computeSampleCounts - start");
+
+	_nInputChannels = input->get_nchan();
 	//! Number of channels outputted per input channel
-	nchan_subband = nchan / input->get_nchan();
+	nchan_subband = nchan / _nInputChannels;
 	//
 	nfilt_pos = 0;
 	nfilt_neg = 0;
@@ -319,7 +322,7 @@ inline void dsp::Filterbank::_setupFftPlans()
 void dsp::Filterbank::transformation()
 {
 	cerrStream << isVerbose << "dsp::Filterbank::transformation input ndat=" 
-		<< input->get_ndat() << " nchan=" << input->get_nchan() << endl;
+		<< input->get_ndat() << " nchan=" << _nInputChannels << endl;
 
 	if(!prepared)
 		prepare();
@@ -451,7 +454,7 @@ inline void dsp::Filterbank::_filterbankCPU()
 	// /////////////////////////////////////////////////////////////////////
 	// PERFORM FILTERBANK DIRECTLY(CPU)
 	// /////////////////////////////////////////////////////////////////////
-	for(int input_ichan=0; input_ichan<input->get_nchan(); input_ichan++)
+	for(int input_ichan=0; input_ichan<_nInputChannels; input_ichan++)
 	{
 		for(ipart=0; ipart<npart; ipart++)
 		{
