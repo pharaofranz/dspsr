@@ -371,12 +371,39 @@ inline void dsp::Filterbank::_filterbank()
 	// number of floats to step between output from filterbank
 	out_step = (freq_res - nfilt_tot) * 2;
 
+	// initialize scratch space for FFTs
+	_bigFftSize = nchan_subband * freq_res * 2;
+	if(input->get_state() == Signal::Nyquist)
+		_bigFftSize += 256;
+
+	// also need space to hold backward FFTs
+	unsigned scratch_needed = _bigFftSize + 2 * freq_res;
+
+	if(apodization)
+		scratch_needed += _bigFftSize;
+
+	if(matrix_convolution)
+		scratch_needed += _bigFftSize;
+
+	// divide up the scratch space
+	_complexSpectrum[0] = scratch->space<float>(scratch_needed);
+	_complexSpectrum[1] = _complexSpectrum[0];
+	if(matrix_convolution)
+		_complexSpectrum[1] += _bigFftSize;
+
+
 	// /////////////////////////////////////////////////////////////////////
 	// PERFORM FILTERBANK VIA ENGINE(e.g. on GPU)
 	// /////////////////////////////////////////////////////////////////////
 	if(_engine)
 	{
+
 		cerrStream << isVerbose << "have engine"<<endl;
+		// divide up the scratch space
+		_complexSpectrum[0] = scratch->space<float>(scratch_needed);
+		_complexSpectrum[1] = _complexSpectrum[0];
+		if(matrix_convolution)
+			_complexSpectrum[1] += _bigFftSize;
 
 		_engine->set_scratch(_complexSpectrum[0]);
 		_engine->perform(input, output, npart, in_step, out_step);
@@ -401,27 +428,7 @@ inline void dsp::Filterbank::_filterbank()
 inline void dsp::Filterbank::_filterbankCPU()
 {
 
-	// initialize scratch space for FFTs
-	unsigned bigfftsize = nchan_subband * freq_res * 2;
-	if(input->get_state() == Signal::Nyquist)
-		bigfftsize += 256;
-
-	// also need space to hold backward FFTs
-	unsigned scratch_needed = bigfftsize + 2 * freq_res;
-
-	if(apodization)
-		scratch_needed += bigfftsize;
-
-	if(matrix_convolution)
-		scratch_needed += bigfftsize;
-
-	// divide up the scratch space
-	_complexSpectrum[0] = scratch->space<float>(scratch_needed);
-	_complexSpectrum[1] = _complexSpectrum[0];
-	if(matrix_convolution)
-		_complexSpectrum[1] += bigfftsize;
-
-	float* c_time = _complexSpectrum[1] + bigfftsize;
+	float* c_time = _complexSpectrum[1] + _bigFftSize;
 	float* windowed_time_domain = c_time + 2 * freq_res;
 
 	unsigned cross_pol = 1;
