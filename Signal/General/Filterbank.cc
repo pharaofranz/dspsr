@@ -399,11 +399,6 @@ inline void dsp::Filterbank::_filterbank()
 	{
 
 		cerrStream << isVerbose << "have engine"<<endl;
-		// divide up the scratch space
-		_complexSpectrum[0] = scratch->space<float>(scratch_needed);
-		_complexSpectrum[1] = _complexSpectrum[0];
-		if(matrix_convolution)
-			_complexSpectrum[1] += _bigFftSize;
 
 		_engine->set_scratch(_complexSpectrum[0]);
 		_engine->perform(input, output, npart, in_step, out_step);
