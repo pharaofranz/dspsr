@@ -23,7 +23,7 @@ using namespace std;
 
 // #define _DEBUG 1
 
-#if 0 
+#if 1 
 #define TESTING_LOG(s) cerr << s << endl
 #define TESTING_LOG_LINE cerr << __LINE__ << ":" << __FUNCTION__ << endl
 #else 
@@ -68,11 +68,11 @@ inline void dsp::Filterbank::_makePreparations()
 	_computeSampleCounts();
 	_computeScaleFactor();
 	matrix_convolution = false;
-	if(has_buffering_policy()) {
+	if(has_buffering_policy()==true) {
 		get_buffering_policy()->set_minimum_samples(nsamp_fft);
 	}
 	_prepareOutput();
-	if(_engine) {
+	if(_engine==true) {
 		_engine->setup(this);
 	} else {
 		_setupFftPlans();
@@ -84,7 +84,7 @@ inline void dsp::Filterbank::_makePreparations()
 void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 {
 	TESTING_LOG("_prepareOutput - start");
-	if(set_ndat)
+	if(set_ndat==true)
 	{
 		cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput set ndat=" 
 			<< ndat << endl;
@@ -96,10 +96,27 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	}
 	TESTING_LOG_LINE;
 
+	output->copy_configuration( get_input() );
+	output->set_nchan( nchan );
+	output->set_ndim( 2 );
+	output->set_state( Signal::Analytic );
+
+
 	WeightedTimeSeries* weighted_output;
 	weighted_output = dynamic_cast<WeightedTimeSeries*>(output.get());
-
+	
+	unsigned tres_ratio = nsamp_fft / freq_res;
 	TESTING_LOG_LINE;
+
+	if(weighted_output){
+		weighted_output->set_reserve_kludge_factor(tres_ratio);		
+		
+		weighted_output->set_reserve_kludge_factor(1);
+		weighted_output->convolve_weights(nsamp_fft, nsamp_step);
+		weighted_output->scrunch_weights(tres_ratio);
+	}
+	TESTING_LOG_LINE;
+
 	/* the problem: copy_configuration copies the weights array, which
 	   results in a call to resize_weights, which sets some offsets
 	   according to the reserve(for later prepend).  However, the
@@ -110,27 +127,6 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	//cerr << "nsamp_fft = " << nsamp_fft << endl;
 	//cerr << "freq_res = " << freq_res << endl;
 
-	unsigned tres_ratio = nsamp_fft / freq_res;
-	TESTING_LOG_LINE;
-	if(weighted_output)
-		weighted_output->set_reserve_kludge_factor(tres_ratio);
-	TESTING_LOG_LINE;
-
-	output->copy_configuration( get_input() );
-	output->set_nchan( nchan );
-	output->set_ndim( 2 );
-	output->set_state( Signal::Analytic );
-
-	TESTING_LOG_LINE;
-	//_customPrepare();
-	TESTING_LOG_LINE;
-	if(weighted_output)
-	{
-		weighted_output->set_reserve_kludge_factor(1);
-		weighted_output->convolve_weights(nsamp_fft, nsamp_step);
-		weighted_output->scrunch_weights(tres_ratio);
-	}
-	TESTING_LOG_LINE;
 	if(set_ndat)
 	{
 		cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput reset ndat=" 
@@ -145,12 +141,10 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 			<< ndat << endl;
 		output->resize(ndat);
 	}
-	TESTING_LOG_LINE;
 	cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput output ndat="
 		<< output->get_ndat() << endl;
 	TESTING_LOG_LINE;
 	output->rescale(scalefac);
-	TESTING_LOG_LINE;
 	cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput scale="
 		<< output->get_scale() <<endl;
 	TESTING_LOG_LINE;
@@ -362,7 +356,6 @@ void dsp::Filterbank::transformation()
 
 inline void dsp::Filterbank::_filterbank()
 {
-
 	// number of floats to step between input to filterbank
 	in_step = nsamp_step * input->get_ndim();
 
@@ -371,30 +364,22 @@ inline void dsp::Filterbank::_filterbank()
 	// number of floats to step between output from filterbank
 	out_step = (freq_res - nfilt_tot) * 2;
 
-	
 	// initialize scratch space for FFTs
-	unsigned bigfftsize = nchan_subband * freq_res * 2;
+	_bigFftSize = nchan_subband * freq_res * 2;
 	if(input->get_state() == Signal::Nyquist)
-		bigfftsize += 256;
+		_bigFftSize += 256;
 
 	// also need space to hold backward FFTs
-	unsigned scratch_needed = bigfftsize + 2 * freq_res;
-
-	//if(apodization)
-	//	scratch_needed += bigfftsize;
-
-	//if(matrix_convolution)
-	//	scratch_needed += bigfftsize;
-
+	unsigned scratch_needed = _bigFftSize + 2 * freq_res;
 	// divide up the scratch space
 	_complexSpectrum[0] = scratch->space<float>(scratch_needed);
-	_complexSpectrum[1] = _complexSpectrum[0];
-
+	
 	// /////////////////////////////////////////////////////////////////////
 	// PERFORM FILTERBANK VIA ENGINE(e.g. on GPU)
 	// /////////////////////////////////////////////////////////////////////
 	if(_engine)
 	{
+
 		cerrStream << isVerbose << "have engine"<<endl;
 
 		_engine->set_scratch(_complexSpectrum[0]);
@@ -420,27 +405,7 @@ inline void dsp::Filterbank::_filterbank()
 inline void dsp::Filterbank::_filterbankCPU()
 {
 
-	// initialize scratch space for FFTs
-	unsigned bigfftsize = nchan_subband * freq_res * 2;
-	if(input->get_state() == Signal::Nyquist)
-		bigfftsize += 256;
-
-	// also need space to hold backward FFTs
-	unsigned scratch_needed = bigfftsize + 2 * freq_res;
-
-	if(apodization)
-		scratch_needed += bigfftsize;
-
-	if(matrix_convolution)
-		scratch_needed += bigfftsize;
-
-	// divide up the scratch space
-	_complexSpectrum[0] = scratch->space<float>(scratch_needed);
-	_complexSpectrum[1] = _complexSpectrum[0];
-	if(matrix_convolution)
-		_complexSpectrum[1] += bigfftsize;
-
-	float* c_time = _complexSpectrum[1] + bigfftsize;
+	float* c_time = _complexSpectrum[1] + _bigFftSize;
 	float* windowed_time_domain = c_time + 2 * freq_res;
 
 	unsigned cross_pol = 1;
