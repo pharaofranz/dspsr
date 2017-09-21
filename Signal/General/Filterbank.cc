@@ -41,7 +41,6 @@ ostream& isVerbose(ostream &stream) {
 : Convolution(name, behaviour), nchan(0), freq_res(1)
 {
 	set_buffering_policy(new InputBuffering(this));
-	verbose = true;
 }
 
 void dsp::Filterbank::set_engine(Engine* engine)
