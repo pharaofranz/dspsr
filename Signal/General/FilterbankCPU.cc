@@ -121,5 +121,13 @@ void FilterbankEngineCPU::finish()
 void FilterbankEngineCPU::set_scratch (float* scratch)
 {
 	//std::cerr << "FilterbankEngineCPU::set_scratch(" << scratch << ")" << std::endl;
-    _scratch = scratch;
+	unsigned bigFftSize = _nChannelSubbands * _frequencyResolution * 2;
+	if(_isRealToComplex) {
+		bigFftSize += 256;
+	}
+    	_scratch = scratch;
+	_complexSpectrum[0] = scratch;
+	_complexSpectrum[1] = _complexSpectrum[0] + bigFftSize;
+	_complexTime = _complexSpectrum[1] + bigFftSize;
+	_windowedTimeDomain = _complexTime + 2 * _frequencyResolution;
 }
