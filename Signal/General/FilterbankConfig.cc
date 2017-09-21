@@ -106,7 +106,7 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
     filterbank->set_scratch (gpu_scratch);
   }
 #else
-	//filterbank->set_engine(new FilterbankEngineCPU());
+	filterbank->set_engine(new FilterbankEngineCPU());
 #endif
 
   return filterbank.release();
