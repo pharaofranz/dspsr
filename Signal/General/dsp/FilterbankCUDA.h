@@ -36,7 +36,7 @@ class FilterbankEngineCUDA : public dsp::Filterbank::Engine
     //! Default Constructor
     FilterbankEngineCUDA (cudaStream_t stream) 
 	: _planForward(0), _planBackward(0), _realToComplex(false), d_fft(0),
-	  _convolutionKernel(0), _nFilterPosition(0)
+	  _convolutionKernel(0), _nFilterPosition(0), _stream(stream)
 	{}
     
     ~FilterbankEngineCUDA () {}
