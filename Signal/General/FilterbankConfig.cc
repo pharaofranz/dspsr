@@ -15,9 +15,8 @@
 #if HAVE_CUDA
 #include "dsp/FilterbankCUDA.h"
 #include "dsp/MemoryCUDA.h"
-#else
-#include "dsp/FilterbankCPU.hpp"
 #endif
+#include "dsp/FilterbankCPU.hpp"
 
 #include <iostream>
 using namespace std;
@@ -95,8 +94,7 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
   CUDA::DeviceMemory* device_memory = 
     dynamic_cast< CUDA::DeviceMemory*> ( _memory );
 
-  if ( device_memory )
-  {
+  if ( device_memory ) {
     cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>( _stream );
 
     filterbank->set_engine (new FilterbankEngineCUDA (cuda_stream));
@@ -104,6 +102,8 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
     Scratch* gpu_scratch = new Scratch;
     gpu_scratch->set_memory (device_memory);
     filterbank->set_scratch (gpu_scratch);
+  } else {	
+	filterbank->set_engine(new FilterbankEngineCPU());
   }
 #else
 	filterbank->set_engine(new FilterbankEngineCPU());

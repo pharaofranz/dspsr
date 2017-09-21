@@ -23,7 +23,7 @@ using namespace std;
 
 // #define _DEBUG 1
 
-#if 1 
+#if 0 
 #define TESTING_LOG(s) cerr << s << endl
 #define TESTING_LOG_LINE cerr << __LINE__ << ":" << __FUNCTION__ << endl
 #else 
@@ -45,6 +45,7 @@ ostream& isVerbose(ostream &stream) {
 
 void dsp::Filterbank::set_engine(Engine* engine)
 {
+	cerr << "dsp::Filterbank::set_engine(" << engine << ")" << endl;
 	_engine = engine;
 }
 
@@ -373,13 +374,14 @@ inline void dsp::Filterbank::_filterbank()
 	unsigned scratch_needed = _bigFftSize + 2 * freq_res;
 	// divide up the scratch space
 	_complexSpectrum[0] = scratch->space<float>(scratch_needed);
-	
+	_complexSpectrum[1] = _complexSpectrum[0];	
+
 	// /////////////////////////////////////////////////////////////////////
 	// PERFORM FILTERBANK VIA ENGINE(e.g. on GPU)
 	// /////////////////////////////////////////////////////////////////////
 	if(_engine)
 	{
-
+		cerr << endl << "have engine" << endl;
 		cerrStream << isVerbose << "have engine"<<endl;
 
 		_engine->set_scratch(_complexSpectrum[0]);
@@ -395,6 +397,7 @@ inline void dsp::Filterbank::_filterbank()
 	// /////////////////////////////////////////////////////////////////////
 	else
 	{
+		cerr << endl << "no engine" << endl;
 		_filterbankCPU(); 
 	} // if no engine(on CPU)
 
@@ -407,6 +410,8 @@ inline void dsp::Filterbank::_filterbankCPU()
 
 	float* c_time = _complexSpectrum[1] + _bigFftSize;
 	float* windowed_time_domain = c_time + 2 * freq_res;
+
+	//cerr << "c_time=" << c_time << " windowed_time_domain=" << windowed_time_domain << endl;	
 
 	unsigned cross_pol = 1;
 	if(matrix_convolution)
@@ -463,10 +468,13 @@ inline void dsp::Filterbank::_filterbankCPU()
 						apodization -> operate(time_dom_ptr, windowed_time_domain);
 						time_dom_ptr = windowed_time_domain;
 					}
-					if(input->get_state() == Signal::Nyquist)
+					if(input->get_state() == Signal::Nyquist) {
+						//cerr << "frc1d start" << endl;
 						forward->frc1d(nsamp_fft, _complexSpectrum[ipol], time_dom_ptr);
-					else
+						//cerr << "frc1d finish" << endl;
+					} else {
 						forward->fcc1d(nsamp_fft, _complexSpectrum[ipol], time_dom_ptr);
+					}
 				}
 
 				if(matrix_convolution)
@@ -512,15 +520,20 @@ inline void dsp::Filterbank::_filterbankCPU()
 
 					for(ichan=0; ichan < nchan_subband; ichan++)
 					{
+						//cerr << "bcc1d start" << endl;
+						//cerr << "freq_res=" << freq_res << " c_time=" << c_time << " freq_dom_ptr" << freq_dom_ptr << endl;
 						backward->bcc1d(freq_res, c_time, freq_dom_ptr);
+						//cerr << "bcc1d finish" << endl;
 
 						freq_dom_ptr += freq_res*2;
 
 						data_into =(uint64_t*)( output->get_datptr(jchan+ichan, ipol) + out_offset);
 						data_from =(uint64_t*)( c_time + nfilt_pos*2 );  // complex nos.
-
+						
+						//cerr << "data copy start" << endl;
 						for(unsigned ipt=0; ipt < _nChannelsSmallFft; ipt++)
 							data_into[ipt] = data_from[ipt];
+						//cerr << "data copy end" << endl;
 
 					} // for each output channel
 
