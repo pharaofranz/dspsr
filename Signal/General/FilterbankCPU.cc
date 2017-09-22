@@ -29,6 +29,8 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
     _nChannelSubbands = filterbank->get_nchan_subband();
     _isRealToComplex = (filterbank->get_input()->get_state() == Signal::Nyquist);
     
+	_nFftPoints = _nChannelSubbands*_frequencyResolution;
+
     const unsigned nSamplesForward = (_frequencyResolution*_nChannelSubbands) * (_isRealToComplex ? 2 : 1);
     const unsigned nSamplesBackward = (_frequencyResolution*_nChannelSubbands);
     const FTransform::type transformType = (_isRealToComplex ? FTransform::frc : FTransform::fcc);
@@ -68,6 +70,10 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
     _nFftSamples = _isRealToComplex ? 2*_nFftPoints : _nFftPoints;
     
     _nSampleStep = _nFftSamples - _nSampleOverlap;
+
+	std::cerr << "_frequencyResolution=" << _frequencyResolution << " _nChannelSubbands=" << _nChannelSubbands << " _nPointsToKeep=" << _nPointsToKeep << " _scaleFactor=" << _scaleFactor
+		<< " _nFftSamples=" << _nFftSamples << " _nSampleStep=" << _nSampleStep << std::endl << std::endl;
+
 #endif
 }
 
@@ -75,39 +81,49 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
 {
 #ifdef USE_NEW_CPU_CODE
 	//std::cerr << "FilterbankEngineCPU::perform()" << std::endl;
-    const uint64_t nPolarizations = in->get_npol();
-    const uint64_t nInputChannels = in->get_nchan();
-    const uint64_t nOutputChannels = out->get_nchan();
+    	const uint64_t nPolarizations = in->get_npol();
+    	const uint64_t nInputChannels = in->get_nchan();
+    	const uint64_t nOutputChannels = out->get_nchan();
+
+	//std::cerr << "nPolarizations=" << nPolarizations << " nInputChannels=" << nInputChannels << " nParts=" << nParts << std::endl;
     
-    for(uint64_t i = 0; i < nInputChannels; i++) {
-        for(uint64_t j = 0; j < nPolarizations; j++) {
-            for(uint64_t k = 0; k < nParts; k++) {
-		//std::cerr << "i:" << i << " j:" << j << " k:" << k << std::endl;
-                const uint64_t inOffset = k*inStep;
-                const uint64_t outOffset = k*outStep;
-		//std::cerr << "inOffset:" << inOffset << " outOffset:" << outOffset << std::endl;
-                float* timeDomainInputPtr = (float*)in->get_datptr(i, j) + inOffset;
-                float* frequencyDomainPtr = _scratch;
-                float* timeDomainOutputPtr = _scratch + _nFftSamples;
-		//std::cerr << "_forward:" << _forward << std::endl;
-                if(_isRealToComplex) {
-			//std::cerr << "_forward->frc1d:" << _forward->frc1d << std::endl;
-			//std::cerr << "frc1d(" << _nFftSamples << ", " << frequencyDomainPtr << ", " << timeDomainInputPtr << ")" << std::endl;
-                    _forward->frc1d(_nFftSamples, frequencyDomainPtr, timeDomainInputPtr);
-                } else {
-			//std::cerr << "fcc1d(" << _nFftSamples << ", " << frequencyDomainPtr << ", " << timeDomainInputPtr << ")" << std::endl;
-                    _forward->fcc1d(_nFftSamples, frequencyDomainPtr, timeDomainInputPtr);
-                }
-		//std::cerr << "bcc1d(" << _frequencyResolution << ", " << timeDomainOutputPtr << ", " << frequencyDomainPtr << ")" << std::endl;
-                _backward->bcc1d(_frequencyResolution, timeDomainOutputPtr, frequencyDomainPtr);
-                //
-                if(out) {
-                    float* outputPtr = out->get_datptr(i*_nChannelSubbands, j)+outOffset;
-			memcpy(outputPtr, timeDomainOutputPtr, _frequencyResolution*sizeof(float));
-                }
-            }
-        }
-    }
+    	for(uint64_t iInputChannel = 0; iInputChannel < nInputChannels; iInputChannel++) {
+		for(uint64_t iPart = 0; iPart < nParts; iPart++) {
+                	const uint64_t inOffset = iPart*inStep;
+                	const uint64_t outOffset = iPart*outStep;
+        		for(uint64_t iPolarization = 0; iPolarization < nPolarizations; iPolarization++) {
+				//std::cerr << "iInputChannel:" << iInputChannel << " iPart:" << iPart << " iPolarization:" << iPolarization << std::endl;
+				//std::cerr << "inOffset:" << inOffset << " outOffset:" << outOffset << std::endl;
+                		float* timeDomainInputPtr = const_cast<float*>(in->get_datptr(iInputChannel, iPolarization)) + inOffset;
+                		float* frequencyDomainPtr = _complexSpectrum[iPolarization];
+				//std::cerr << "iInputChannel=" << iInputChannel << " iPolarization=" << iPolarization << " inOffset=" << inOffset << std::endl;
+                		//float* timeDomainOutputPtr = _scratch + _nFftSamples;
+				//std::cerr << "_forward:" << _forward << std::endl;
+                		if(_isRealToComplex) {
+					//std::cerr << "_forward->frc1d:" << _forward->frc1d << std::endl;
+					//std::cerr << "frc1d(" << _nFftSamples << ", " << frequencyDomainPtr << ", " << timeDomainInputPtr << ")" << std::endl;
+                    			
+					_forward->frc1d(_nFftSamples, frequencyDomainPtr, timeDomainInputPtr);
+                		} else {
+					//std::cerr << "fcc1d(" << _nFftSamples << ", " << frequencyDomainPtr << ", " << timeDomainInputPtr << ")" << std::endl;
+                    			
+					_forward->fcc1d(_nFftSamples, frequencyDomainPtr, timeDomainInputPtr);
+                		}
+				//std::cerr << "bcc1d(" << _frequencyResolution << ", " << timeDomainOutputPtr << ", " << frequencyDomainPtr << ")" << std::endl;
+                		
+				//_backward->bcc1d(_frequencyResolution, _complexTime, frequencyDomainPtr);
+                		//
+                		if(out) {
+					for(uint64_t iSubband = 0; iSubband < _nChannelSubbands; iSubband++) {
+						
+					}
+                    			//void* outputPtr = out->get_datptr(iChan*_nChannelSubbands, iPol)+outOffset;
+					//const uint64_t outputSpan = out->get_datptr(iChan*_nChannelSubbands+1, iPol) - out->get_datptr(iChan*_nChannelSubbands, iPol);
+					//memcpy(destinationPtr, _complexTime, _frequencyResolution*sizeof(float));
+                		}
+            		}
+        	}
+    	}
 	//std::cerr << "FilterbankEngineCPU::Perform() complete" << std::endl;
 #endif
 }
@@ -127,7 +143,7 @@ void FilterbankEngineCPU::set_scratch (float* scratch)
 	}
     	_scratch = scratch;
 	_complexSpectrum[0] = scratch;
-	_complexSpectrum[1] = _complexSpectrum[0] + bigFftSize;
+	_complexSpectrum[1] = _complexSpectrum[0];
 	_complexTime = _complexSpectrum[1] + bigFftSize;
 	_windowedTimeDomain = _complexTime + 2 * _frequencyResolution;
 }

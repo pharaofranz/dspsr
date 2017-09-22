@@ -381,7 +381,7 @@ inline void dsp::Filterbank::_filterbank()
 	// /////////////////////////////////////////////////////////////////////
 	if(_engine)
 	{
-		cerr << endl << "have engine" << endl;
+		//cerr << endl << "nsamp_fft=" << nsamp_fft << endl;
 		cerrStream << isVerbose << "have engine"<<endl;
 
 		_engine->set_scratch(_complexSpectrum[0]);
@@ -397,7 +397,7 @@ inline void dsp::Filterbank::_filterbank()
 	// /////////////////////////////////////////////////////////////////////
 	else
 	{
-		cerr << endl << "no engine" << endl;
+		//cerr << endl << "no engine" << endl;
 		_filterbankCPU(); 
 	} // if no engine(on CPU)
 
@@ -419,9 +419,13 @@ inline void dsp::Filterbank::_filterbankCPU()
 
 	unsigned npol = input->get_npol();
 
+	//verbose = true;
+
 	cerrStream << isVerbose << "dsp::Filterbank::transformation enter main loop" 
 		<<" cpol=" << cross_pol << " npol=" << npol 
 		<<" npart=" << npart  << endl;
+
+	//verbose = false;
 
 	unsigned ipt, ipol, jpol, ichan;
 	uint64_t ipart;
@@ -463,13 +467,15 @@ inline void dsp::Filterbank::_filterbankCPU()
 
 					time_dom_ptr += in_offset;
 
+					cerr << "input_ichan=" << input_ichan << " ipol=" << ipol << " in_offset=" << in_offset << endl;
+
 					if(apodization)
 					{
 						apodization -> operate(time_dom_ptr, windowed_time_domain);
 						time_dom_ptr = windowed_time_domain;
 					}
 					if(input->get_state() == Signal::Nyquist) {
-						//cerr << "frc1d start" << endl;
+						//cerr << "frc1d(" << endl;
 						forward->frc1d(nsamp_fft, _complexSpectrum[ipol], time_dom_ptr);
 						//cerr << "frc1d finish" << endl;
 					} else {
