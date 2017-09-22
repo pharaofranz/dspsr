@@ -122,7 +122,7 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
 						_backward->bcc1d(_frequencyResolution, _complexTime, frequencyDomainPtr);
 						//_forward->frc1d(_frequencyResolution, frequencyDomainPtr, timeDomainInputPtr);
 						//
-						frequencyDomainPtr += _frequencyResolution;
+						frequencyDomainPtr += _frequencyResolution*2;
                     				void* destinationPtr = out->get_datptr((iInputChannel*_nChannelSubbands)+iSubband, iPolarization)+outOffset;
 						void* sourcePtr = _complexTime + _nFilterPosition*2;
 						memcpy(destinationPtr, sourcePtr, _nPointsToKeep*sizeof(float)*2);
