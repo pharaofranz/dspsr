@@ -32,11 +32,12 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
 	_nFftPoints = _nChannelSubbands*_frequencyResolution;
 
     const unsigned nSamplesForward = (_frequencyResolution*_nChannelSubbands) * (_isRealToComplex ? 2 : 1);
-    const unsigned nSamplesBackward = (_frequencyResolution*_nChannelSubbands);
+    const unsigned nSamplesBackward = _frequencyResolution;
     const FTransform::type transformType = (_isRealToComplex ? FTransform::frc : FTransform::fcc);
     _forward = FTransform::Agent::current->get_plan(nSamplesForward, transformType);
     _backward = FTransform::Agent::current->get_plan(nSamplesBackward, FTransform::bcc);
     _nPointsToKeep = _frequencyResolution;
+	_nFilterPosition = 0;
     
     if(filterbank->has_response()) {
         const dsp::Response* response = filterbank->get_response();
@@ -51,6 +52,7 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
         
         //! Complex samples dropped from beginning of cyclical convolution result
         unsigned nFilterPositive = response->get_impulse_pos();
+	_nFilterPosition = nFilterPositive;
         //! Complex samples dropped from end of cyclical convolution result
         unsigned nFilterNegative = response->get_impulse_neg();
         
@@ -115,12 +117,23 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
                 		//
                 		if(out) {
 					for(uint64_t iSubband = 0; iSubband < _nChannelSubbands; iSubband++) {
-						
+						//std::cerr << "_";
+						//std::cerr << "_frequencyResolution=" << _frequencyResolution << " _complexTime=" << _complexTime << std::endl;
+						_backward->bcc1d(_frequencyResolution, _complexTime, frequencyDomainPtr);
+						//_forward->frc1d(_frequencyResolution, frequencyDomainPtr, timeDomainInputPtr);
+						//
+						frequencyDomainPtr += _frequencyResolution;
+                    				void* destinationPtr = out->get_datptr((iInputChannel*_nChannelSubbands)+iSubband, iPolarization)+outOffset;
+						void* sourcePtr = _complexTime + _nFilterPosition*2;
+						memcpy(destinationPtr, sourcePtr, _nPointsToKeep*sizeof(float)*2);
+						//std::cerr << "_nFilterPosition=" << _nFilterPosition << " _nPointsToKeep=" << _nPointsToKeep  << std::endl;
 					}
+					//std::cerr << std::endl;
                     			//void* outputPtr = out->get_datptr(iChan*_nChannelSubbands, iPol)+outOffset;
 					//const uint64_t outputSpan = out->get_datptr(iChan*_nChannelSubbands+1, iPol) - out->get_datptr(iChan*_nChannelSubbands, iPol);
 					//memcpy(destinationPtr, _complexTime, _frequencyResolution*sizeof(float));
                 		}
+				//std::cerr << "looped" << std::endl;
             		}
         	}
     	}

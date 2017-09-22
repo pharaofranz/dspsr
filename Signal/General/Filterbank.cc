@@ -467,7 +467,7 @@ inline void dsp::Filterbank::_filterbankCPU()
 
 					time_dom_ptr += in_offset;
 
-					cerr << "input_ichan=" << input_ichan << " ipol=" << ipol << " in_offset=" << in_offset << endl;
+					//cerr << "input_ichan=" << input_ichan << " ipol=" << ipol << " in_offset=" << in_offset << endl;
 
 					if(apodization)
 					{
@@ -475,7 +475,7 @@ inline void dsp::Filterbank::_filterbankCPU()
 						time_dom_ptr = windowed_time_domain;
 					}
 					if(input->get_state() == Signal::Nyquist) {
-						//cerr << "frc1d(" << endl;
+						//cerr << "frc1d(" << nsamp_fft << ")" << endl;
 						forward->frc1d(nsamp_fft, _complexSpectrum[ipol], time_dom_ptr);
 						//cerr << "frc1d finish" << endl;
 					} else {
@@ -523,11 +523,13 @@ inline void dsp::Filterbank::_filterbankCPU()
 
 					unsigned jchan = input_ichan * nchan_subband;
 					freq_dom_ptr = _complexSpectrum[ipol];
-
+					
+					//cerr << "nchan_subband=" << nchan_subband << endl;
 					for(ichan=0; ichan < nchan_subband; ichan++)
 					{
 						//cerr << "bcc1d start" << endl;
 						//cerr << "freq_res=" << freq_res << " c_time=" << c_time << " freq_dom_ptr" << freq_dom_ptr << endl;
+						cerr << "_";
 						backward->bcc1d(freq_res, c_time, freq_dom_ptr);
 						//cerr << "bcc1d finish" << endl;
 
@@ -540,14 +542,17 @@ inline void dsp::Filterbank::_filterbankCPU()
 						for(unsigned ipt=0; ipt < _nChannelsSmallFft; ipt++)
 							data_into[ipt] = data_from[ipt];
 						//cerr << "data copy end" << endl;
+						//cerr << "ichan=" << ichan << " freq_res=" << freq_res << " _nChannelsSmallFft=" << _nChannelsSmallFft << endl;
 
 					} // for each output channel
+					cerr << endl;
 
 				} // for each cross poln
 
 			} // for each polarization
 
 		} // for each big fft(ipart)
+		cerr << endl;
 
 	} // for each input channel
 

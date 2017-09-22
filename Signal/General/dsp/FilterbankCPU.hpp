@@ -35,6 +35,7 @@ class FilterbankEngineCPU : public dsp::Filterbank::Engine
     unsigned _nFftSamples;
     unsigned _nSampleOverlap;
     unsigned _nSampleStep;
+	unsigned _nFilterPosition;
     //
     FTransform::Plan* _forward;
     FTransform::Plan* _backward;
