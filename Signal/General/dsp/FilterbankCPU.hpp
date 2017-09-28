@@ -39,9 +39,10 @@ class FilterbankEngineCPU : public dsp::Filterbank::Engine
     //
     FTransform::Plan* _forward;
     FTransform::Plan* _backward;
+    dsp::Response* _response
     //
-    	float* _scratch;
-    	float* _complexSpectrum[2];
+	float* _scratch;
+	float* _complexSpectrum[2];
 	float* _complexTime;
 	float* _windowedTimeDomain;
     

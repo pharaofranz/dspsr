@@ -40,21 +40,20 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
 	_nFilterPosition = 0;
     
     if(filterbank->has_response()) {
-        const dsp::Response* response = filterbank->get_response();
-        
-        unsigned nChannels = response->get_nchan();
-        unsigned nData = response->get_ndat();
-        unsigned nDimensions = response->get_ndim();
+	_response = filterbank->get_response();
+        unsigned nChannels = _response->get_nchan();
+        unsigned nData = _response->get_ndat();
+        unsigned nDimensions = _response->get_ndim();
         
         assert(nChannels == filterbank->get_nchan());
         assert(nData == _frequencyResolution);
         assert(nDimensions == 2);
         
         //! Complex samples dropped from beginning of cyclical convolution result
-        unsigned nFilterPositive = response->get_impulse_pos();
+        unsigned nFilterPositive = _response->get_impulse_pos();
 	_nFilterPosition = nFilterPositive;
         //! Complex samples dropped from end of cyclical convolution result
-        unsigned nFilterNegative = response->get_impulse_neg();
+        unsigned nFilterNegative = _response->get_impulse_neg();
         
         unsigned nFilterTotal = nFilterPositive + nFilterNegative;
         
@@ -112,7 +111,14 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
 					_forward->fcc1d(_nFftSamples, frequencyDomainPtr, timeDomainInputPtr);
                 		}
 				//std::cerr << "bcc1d(" << _frequencyResolution << ", " << timeDomainOutputPtr << ", " << frequencyDomainPtr << ")" << std::endl;
-                		
+				
+				if(_response) {
+					_response->operate(	_complexSpectrum[iPolarization], 
+								iPolarization,
+								iInputChannel*_nChannelSubbands,
+								_nChannelSubbands);
+				}
+
 				//_backward->bcc1d(_frequencyResolution, _complexTime, frequencyDomainPtr);
                 		//
                 		if(out) {
