@@ -49,6 +49,9 @@ void dsp::Filterbank::set_engine(Engine* engine)
 	_engine = engine;
 }
 
+	/**
+	 * Initializer function to prepare Filterbank for use.
+	 */
 inline void dsp::Filterbank::prepare()
 {
 	cerrStream << isVerbose << "dsp::Filterbank::prepare" << endl;
@@ -82,6 +85,9 @@ inline void dsp::Filterbank::_makePreparations()
 	TESTING_LOG("_makePreparations - end");
 }
 
+	/**
+	 * Prepares output data structures and values for output of processed timeseries data.
+	 */
 void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 {
 	TESTING_LOG("_prepareOutput - start");
@@ -206,6 +212,9 @@ inline void dsp::Filterbank::reserve()
 	_resizeOutput(true);
 }
 
+	/**
+	 * Re-prepares output after adjusting output size to match input size.
+	 */
 inline void dsp::Filterbank::_resizeOutput(bool reserve_extra)
 {
 	const uint64_t ndat = input->get_ndat();
@@ -248,6 +257,10 @@ inline void dsp::Filterbank::_resizeOutput(bool reserve_extra)
 	_prepareOutput(output_ndat, true);
 }
 
+	/**
+	 * Calculates the scale factor used to correct for whether or not FFT library uses
+	 * normalized values.
+	 */
 inline void dsp::Filterbank::_computeScaleFactor()
 {
 	scalefac = (FTransform::get_norm() == FTransform::unnormalized) ?
@@ -255,6 +268,10 @@ inline void dsp::Filterbank::_computeScaleFactor()
 		(double(n_fft) / double(freq_res));
 }
 
+	/**
+	 * Calculates the various sample counts and buffer sizes, resolutions and offsets
+	 * required for operation of the filterbank engine.
+	 */
 inline void dsp::Filterbank::_computeSampleCounts()
 {
 	TESTING_LOG("computeSampleCounts - start");
@@ -292,6 +309,10 @@ inline void dsp::Filterbank::_computeSampleCounts()
 	TESTING_LOG("computeSampleCounts - end");
 }
 
+	/**
+	 * Create FFT plans that will be used when performing FFT/iFFTs that are optimized
+	 * to appropriates sizes for use in filterbank engine.
+	 */
 inline void dsp::Filterbank::_setupFftPlans()
 {
 	TESTING_LOG("setupFftPlans - start");
