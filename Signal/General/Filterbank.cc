@@ -33,11 +33,12 @@ using namespace std;
 
 ostream cerrStream(NULL);
 
-ostream& isVerbose(ostream &stream) {
+ostream& isVerbose(ostream &stream)
+{
 	return (dsp::Filterbank::verbose) ? cerr : stream;
 }
 
-	dsp::Filterbank::Filterbank(const char* name, Behaviour behaviour)
+dsp::Filterbank::Filterbank(const char* name, Behaviour behaviour)
 : Convolution(name, behaviour), nchan(0), freq_res(1)
 {
 	set_buffering_policy(new InputBuffering(this));
@@ -49,29 +50,29 @@ void dsp::Filterbank::set_engine(Engine* engine)
 	_engine = engine;
 }
 
-	/**
-	 * Initializer function to prepare Filterbank for use.
-	 */
+/**
+ * Initializer function to prepare Filterbank for use.
+ */
 inline void dsp::Filterbank::prepare()
 {
 	cerrStream << isVerbose << "dsp::Filterbank::prepare" << endl;
-
+	//
 	_makePreparations();
-
+	//
 	prepared = true;
 }
 
 
-/*
-   These are preparations that could be performed once at the start of
-   the data processing
-   */
+/**
+ * These are preparations that could be performed once at the start of
+ * the data processing
+ */
 inline void dsp::Filterbank::_makePreparations()
 {
 	TESTING_LOG("_makePreparations - start");
 	_computeSampleCounts();
 	_computeScaleFactor();
-	matrix_convolution = false;
+	matrix_convolution = false; // We don't do/use matrix convolution
 	if(has_buffering_policy()==true) {
 		get_buffering_policy()->set_minimum_samples(nsamp_fft);
 	}
@@ -81,18 +82,17 @@ inline void dsp::Filterbank::_makePreparations()
 	} else {
 		_setupFftPlans();
 	}
-	set_passband(NULL);
+	set_passband(NULL); // Passband is unused
 	TESTING_LOG("_makePreparations - end");
 }
 
-	/**
-	 * Prepares output data structures and values for output of processed timeseries data.
-	 */
+/**
+ * Prepares output data structures and values for output of processed timeseries data.
+ */
 void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 {
 	TESTING_LOG("_prepareOutput - start");
-	if(set_ndat==true)
-	{
+	if(set_ndat==true) {
 		cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput set ndat=" 
 			<< ndat << endl;
 		output->set_npol( input->get_npol() );
@@ -102,46 +102,37 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 		output->resize( ndat );
 	}
 	TESTING_LOG_LINE;
-
+	//
 	output->copy_configuration( get_input() );
 	output->set_nchan( nchan );
 	output->set_ndim( 2 );
 	output->set_state( Signal::Analytic );
-
-
+	//
 	WeightedTimeSeries* weighted_output;
 	weighted_output = dynamic_cast<WeightedTimeSeries*>(output.get());
-	
+	//
 	unsigned tres_ratio = nsamp_fft / freq_res;
 	TESTING_LOG_LINE;
-
-	if(weighted_output){
+	//
+	if(weighted_output) {
 		weighted_output->set_reserve_kludge_factor(tres_ratio);		
-		
+		//
 		weighted_output->set_reserve_kludge_factor(1);
 		weighted_output->convolve_weights(nsamp_fft, nsamp_step);
 		weighted_output->scrunch_weights(tres_ratio);
 	}
 	TESTING_LOG_LINE;
-
 	/* the problem: copy_configuration copies the weights array, which
 	   results in a call to resize_weights, which sets some offsets
 	   according to the reserve(for later prepend).  However, the
 	   offset is computed based on values that are about to be changed.
 	   This kludge allows the offsets to reflect the correct values
 	   that will be set later */
-
-	//cerr << "nsamp_fft = " << nsamp_fft << endl;
-	//cerr << "freq_res = " << freq_res << endl;
-
-	if(set_ndat)
-	{
+	if(set_ndat) {
 		cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput reset ndat=" 
 			<< ndat << endl;
 		output->resize(ndat);
-	}
-	else
-	{
+	} else {
 		ndat = input->get_ndat() / tres_ratio;
 
 		cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput scrunch ndat=" 
@@ -163,8 +154,9 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	double ratechange = double(freq_res) / double(nsamp_fft);
 	output->set_rate(input->get_rate() * ratechange);
 	TESTING_LOG_LINE;
-	if(freq_res == 1)
+	if(freq_res == 1) {
 		output->set_dual_sideband(true);
+	}
 	TESTING_LOG_LINE;
 	/*
 	 * if freq_res is even, then each sub-band will be centred on a frequency
@@ -172,78 +164,67 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	 */
 	output->set_dc_centred(freq_res%2);
 	TESTING_LOG_LINE;
-
-#if 0
-	// the centre frequency of each sub-band will be offset
-	double channel_bandwidth = input->get_bandwidth() / nchan;
-	double shift = double(freq_res-1)/double(freq_res);
-	output->set_centre_frequency_offset( 0.5*channel_bandwidth*shift );
-#endif
-	TESTING_LOG_LINE;
 	// dual sideband data produces a band swapped result
-	if(input->get_dual_sideband())
-	{ 
+	if(input->get_dual_sideband()) { 
 		_nInputChannels = input->get_nchan();
-		if(_nInputChannels > 1)
+		if(_nInputChannels > 1) {
 			output->set_nsub_swap(_nInputChannels);
-		else
+		} else {
 			output->set_swap(true);
+		}
 	}
 	TESTING_LOG_LINE;
 	// increment the start time by the number of samples dropped from the fft
-
-	//cerr << "FILTERBANK OFFSET START TIME=" << nfilt_pos << endl;
-
 	output->change_start_time(nfilt_pos);
 	TESTING_LOG_LINE;
 	cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput start time += "
 		<< nfilt_pos << " samps -> " << output->get_start_time() << endl;
 	TESTING_LOG_LINE;
 	// enable the Response to record its effect on the output Timeseries
-	if(response)
+	if(response) {
 		response->mark(output);
+	}
 	TESTING_LOG("_prepareOutput - end");
 }
 
 inline void dsp::Filterbank::reserve()
 {
 	cerrStream << isVerbose << "dsp::Filterbank::reserve" << endl;
-
+	//
 	_resizeOutput(true);
 }
 
-	/**
-	 * Re-prepares output after adjusting output size to match input size.
-	 */
+/**
+ * Re-prepares output after adjusting output size to match input size.
+ */
 inline void dsp::Filterbank::_resizeOutput(bool reserve_extra)
 {
 	const uint64_t ndat = input->get_ndat();
-
 	// number of big FFTs(not including, but still considering, extra FFTs
 	// required to achieve desired time resolution) that can fit into data
 	npart = 0;
-
-	if(nsamp_step == 0)
+	//
+	if(nsamp_step == 0) {
 		throw Error(InvalidState, "dsp::Filterbank::_resizeOutput",
 				"nsamp_step == 0 ... not properly prepared");
-
-	if(ndat > nsamp_overlap)
+	}
+	if(ndat > nsamp_overlap) {
 		npart =(ndat-nsamp_overlap)/nsamp_step;
-
+	}
 	// on some iterations, ndat could be large enough to fit an extra part
-	if(reserve_extra && has_buffering_policy())
+	if(reserve_extra && has_buffering_policy()) {
 		npart += 2;
-
+	}
 	// points kept from each small fft
 	_nChannelsSmallFft = freq_res - nfilt_tot;
-
+	//
 	uint64_t output_ndat = npart * _nChannelsSmallFft;
-
+	//
 	cerrStream << isVerbose << "dsp::Filterbank::reserve input ndat=" << ndat 
 		<< " overlap=" << nsamp_overlap << " step=" << nsamp_step
 		<< " reserve=" << reserve_extra << " _nChannelsSmallFft=" << _nChannelsSmallFft
 		<< " npart=" << npart << " output ndat=" << output_ndat << endl;
-
+	//
 #if DEBUGGING_OVERLAP
 	// this exception is useful when debugging, but not at the end-of-file
 	if( !has_buffering_policy() && ndat > 0
@@ -252,15 +233,14 @@ inline void dsp::Filterbank::_resizeOutput(bool reserve_extra)
 				"npart=%u * step=%u + overlap=%u != ndat=%u",
 				npart, nsamp_step, nsamp_overlap, ndat);
 #endif
-
 	// prepare the output TimeSeries
 	_prepareOutput(output_ndat, true);
 }
 
-	/**
-	 * Calculates the scale factor used to correct for whether or not FFT library uses
-	 * normalized values.
-	 */
+/**
+ * Calculates the scale factor used to correct for whether or not FFT library uses
+ * normalized values.
+ */
 inline void dsp::Filterbank::_computeScaleFactor()
 {
 	scalefac = (FTransform::get_norm() == FTransform::unnormalized) ?
@@ -268,14 +248,14 @@ inline void dsp::Filterbank::_computeScaleFactor()
 		(double(n_fft) / double(freq_res));
 }
 
-	/**
-	 * Calculates the various sample counts and buffer sizes, resolutions and offsets
-	 * required for operation of the filterbank engine.
-	 */
+/**
+ * Calculates the various sample counts and buffer sizes, resolutions and offsets
+ * required for operation of the filterbank engine.
+ */
 inline void dsp::Filterbank::_computeSampleCounts()
 {
 	TESTING_LOG("computeSampleCounts - start");
-
+	//
 	_nInputChannels = input->get_nchan();
 	//! Number of channels outputted per input channel
 	nchan_subband = nchan / _nInputChannels;
@@ -309,10 +289,10 @@ inline void dsp::Filterbank::_computeSampleCounts()
 	TESTING_LOG("computeSampleCounts - end");
 }
 
-	/**
-	 * Create FFT plans that will be used when performing FFT/iFFTs that are optimized
-	 * to appropriates sizes for use in filterbank engine.
-	 */
+/**
+ * Create FFT plans that will be used when performing FFT/iFFTs that are optimized
+ * to appropriates sizes for use in filterbank engine.
+ */
 inline void dsp::Filterbank::_setupFftPlans()
 {
 	TESTING_LOG("setupFftPlans - start");
@@ -339,40 +319,37 @@ void dsp::Filterbank::transformation()
 {
 	cerrStream << isVerbose << "dsp::Filterbank::transformation input ndat=" 
 		<< input->get_ndat() << " nchan=" << _nInputChannels << endl;
-
-	if(!prepared)
+	//
+	if(!prepared) {
 		prepare();
-
+	}
 	_resizeOutput();
-
-	if(has_buffering_policy())
+	//
+	if(has_buffering_policy()) {
 		get_buffering_policy()->set_next_start(nsamp_step * npart);
-
+	}
 	uint64_t output_ndat = output->get_ndat();
-
 	// points kept from each small fft
 	//_nChannelsSmallFft = freq_res - nfilt_tot;
-
 	cerrStream << isVerbose << "dsp::Filterbank::transformation npart=" << npart 
 		<< " _nChannelsSmallFft=" << _nChannelsSmallFft << " output_ndat=" << output_ndat << endl;
 
 	// set the input sample
 	int64_t input_sample = input->get_input_sample();
-	if(output_ndat == 0)
+	if(output_ndat == 0) {
 		output->set_input_sample(0);
-	else if(input_sample >= 0)
+	} else if(input_sample >= 0) {
 		output->set_input_sample((input_sample / nsamp_step) * _nChannelsSmallFft);
-
+	}
 	cerrStream << isVerbose << "dsp::Filterbank::transformation after prepare output"
 		" ndat=" << output->get_ndat() << 
 		" input_sample=" << output->get_input_sample() << endl;
-
-	if(!npart)
-	{
+	//
+	if(!npart) {
 		cerrStream << isVerbose << "dsp::Filterbank::transformation empty result" << endl;
 		return;
 	}
-
+	//
 	_filterbank();
 }
 
@@ -380,37 +357,34 @@ inline void dsp::Filterbank::_filterbank()
 {
 	// number of floats to step between input to filterbank
 	in_step = nsamp_step * input->get_ndim();
-
 	// freq_res - nfilt_tot : points kept from each small fft 
 	//_nChannelsSmallFft = freq_res - nfilt_tot;
 	// number of floats to step between output from filterbank
 	out_step = (freq_res - nfilt_tot) * 2;
-
 	// initialize scratch space for FFTs
 	_bigFftSize = nchan_subband * freq_res * 2;
-	if(input->get_state() == Signal::Nyquist)
+	if(input->get_state() == Signal::Nyquist) {
 		_bigFftSize += 256;
-
+	}
 	// also need space to hold backward FFTs
 	unsigned scratch_needed = _bigFftSize + 2 * freq_res;
 	// divide up the scratch space
 	_complexSpectrum[0] = scratch->space<float>(scratch_needed);
 	_complexSpectrum[1] = _complexSpectrum[0];	
-
 	// /////////////////////////////////////////////////////////////////////
-	// PERFORM FILTERBANK VIA ENGINE(e.g. on GPU)
+	// PERFORM FILTERBANK VIA ENGINE(could be on GPU with CUDA or on CPU)
 	// /////////////////////////////////////////////////////////////////////
-	if(_engine)
-	{
+	if(_engine) {
 		//cerr << endl << "nsamp_fft=" << nsamp_fft << endl;
 		cerrStream << isVerbose << "have engine"<<endl;
 
 		_engine->set_scratch(_complexSpectrum[0]);
 		_engine->perform(input, output, npart, in_step, out_step);
-		if(Operation::record_time)
+		if(Operation::record_time) {
 			_engine->finish();
+		}
 	}
-
+	//
 	cerrStream << isVerbose << "dsp::Filterbank::transformation return with output ndat="
 		<< output->get_ndat() << endl;
 }
