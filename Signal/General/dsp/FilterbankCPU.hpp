@@ -39,7 +39,7 @@ class FilterbankEngineCPU : public dsp::Filterbank::Engine
     //
     FTransform::Plan* _forward;
     FTransform::Plan* _backward;
-    dsp::Response* _response
+    const dsp::Response* _response;
     //
 	float* _scratch;
 	float* _complexSpectrum[2];
