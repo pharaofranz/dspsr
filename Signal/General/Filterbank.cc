@@ -377,7 +377,7 @@ inline void dsp::Filterbank::_filterbank()
 	if(_engine) {
 		//cerr << endl << "nsamp_fft=" << nsamp_fft << endl;
 		cerrStream << isVerbose << "have engine"<<endl;
-
+		//
 		_engine->set_scratch(_complexSpectrum[0]);
 		_engine->perform(input, output, npart, in_step, out_step);
 		if(Operation::record_time) {
