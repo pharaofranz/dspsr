@@ -34,15 +34,15 @@ __global__ void k_multiply(float2* d_fft, float2* kernel)
 	d_fft[i].x = x;
 }
 
-__global__ void k_ncopy(float2* output_data, unsigned output_stride,
-			const float2* input_data, unsigned input_stride,
-			unsigned to_copy)
+__global__ void k_ncopy(float2* outputData, unsigned outputStride,
+			const float2* inputData, unsigned inputStride,
+			unsigned toCopy)
 {
-	output_data += blockIdx.y * output_stride;
-	input_data += blockIdx.y * input_stride;
+	outputData += blockIdx.y * outputStride;
+	inputData += blockIdx.y * inputStride;
 	unsigned index = blockIdx.x * blockDim.x + threadIdx.x;
-	if(index < to_copy) {
-		output_data[index] = input_data[index];
+	if(index < toCopy) {
+		outputData[index] = inputData[index];
 	}
 }
 
@@ -100,25 +100,25 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 	_multiply.set_nelement(_nChannelSubbands * _frequencyResolution);
 	if(filterbank->has_response()) {
 		const dsp::Response* response = filterbank->get_response();
-		unsigned nchan = response->get_nchan();
-		unsigned ndat = response->get_ndat();
-		unsigned ndim = response->get_ndim();
-		assert( nchan == filterbank->get_nchan() );
-		assert( ndat == _frequencyResolution );
-		assert( ndim == 2 ); // complex
-		unsigned mem_size = nchan * ndat * ndim * sizeof(cufftReal);	
+		unsigned nChannels = response->get_nchan();
+		unsigned nData = response->get_ndat();
+		unsigned nDimensions = response->get_ndim();
+		assert( nChannels == filterbank->get_nchan() );
+		assert( nData == _frequencyResolution );
+		assert( nDimensions == 2 ); // complex
+		unsigned memSize = nChannels * nData * nDimensions * sizeof(cufftReal);	
 		// allocate space for the convolution kernel
-		cudaMalloc((void**)&_convolutionKernel, mem_size);
+		cudaMalloc((void**)&_convolutionKernel, memSize);
 		_nFilterPosition = response->get_impulse_pos();
-		unsigned nfilt_tot = _nFilterPosition + response->get_impulse_neg();
+		unsigned nFilterTotal = _nFilterPosition + response->get_impulse_neg();
 		// points kept from each small fft
-		_nKeep = _frequencyResolution - nfilt_tot;
+		_nKeep = _frequencyResolution - nFilterTotal;
 		// copy the kernel accross
 		const float* kernel = filterbank->get_response()->get_datptr(0,0);
 		if(_stream) {
-			cudaMemcpyAsync(_convolutionKernel, kernel, mem_size, cudaMemcpyHostToDevice, _stream);
+			cudaMemcpyAsync(_convolutionKernel, kernel, memSize, cudaMemcpyHostToDevice, _stream);
 		} else {
-			cudaMemcpy(_convolutionKernel, kernel, mem_size, cudaMemcpyHostToDevice);
+			cudaMemcpy(_convolutionKernel, kernel, memSize, cudaMemcpyHostToDevice);
 		}
 	}
 }
