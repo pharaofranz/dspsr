@@ -134,51 +134,42 @@ void FilterbankEngineCUDA::finish()
 }
 
 void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries * out,
-					uint64_t npart, const uint64_t in_step, const uint64_t out_step)
+					uint64_t nParts, const uint64_t inStep, const uint64_t outStep)
 {
 	verbose = dsp::Operation::record_time || dsp::Operation::verbose;
 	//
-	const unsigned npol = in->get_npol();
-	const unsigned input_nchan = in->get_nchan();
-	const unsigned output_nchan = out->get_nchan();
-	// counters
-	unsigned ipol, ichan;
-	uint64_t ipart;
-	// offsets into input and output
-	uint64_t in_offset, out_offset;
+	const unsigned nPolarizations = in->get_npol();
+	const unsigned nInputChannels = in->get_nchan();
+	const unsigned nOutputChannels = out->get_nchan();
 	DEBUG("FilterbankEngineCUDA::perform _stream=" << _stream);
 	// GPU scratch space
 	DEBUG("FilterbankEngineCUDA::perform scratch=" << scratch);
-	float2 *cscratch = (float2 *)scratch;
+	float2* cscratch = (float2*)scratch;
 	//
 	cufftResult result;
-	float *output_ptr;
-	float *input_ptr;
-	uint64_t output_span;
-	//
-	DEBUG("FilterbankEngineCUDA::perform input_nchan=" << input_nchan);
-	DEBUG("FilterbankEngineCUDA::perform npol=" << npol);
-	DEBUG("FilterbankEngineCUDA::perform npart=" << npart);
-	DEBUG("FilterbankEngineCUDA::perform _nKeep=" << _nKeep);
-	DEBUG("FilterbankEngineCUDA::perform in_step=" << in_step);
-	DEBUG("FilterbankEngineCUDA::perform out_step=" << out_step);
-	for(ichan = 0; ichan < input_nchan; ichan++) {
-		for(ipol = 0; ipol < npol; ipol++) {
-			for(ipart = 0; ipart < npart; ipart++) {
-				DEBUG("FilterbankEngineCUDA::perform ipart " << ipart << " of " << npart);
-				in_offset = ipart * in_step;
-				out_offset = ipart * out_step;
-				DEBUG("FilterbankEngineCUDA::perform offsets in=" << in_offset << " out=" << out_offset);
-				input_ptr = const_cast<float *>(in->get_datptr(ichan, ipol)) + in_offset;
-				DEBUG("FilterbankEngineCUDA::perform FORWARD FFT inptr=" << input_ptr << " outptr=" << cscratch);
+	//DEBUG("FilterbankEngineCUDA::perform input_nchan=" << input_nchan);
+	//DEBUG("FilterbankEngineCUDA::perform npol=" << npol);
+	//DEBUG("FilterbankEngineCUDA::perform npart=" << npart);
+	//DEBUG("FilterbankEngineCUDA::perform _nKeep=" << _nKeep);
+	//DEBUG("FilterbankEngineCUDA::perform in_step=" << in_step);
+	//DEBUG("FilterbankEngineCUDA::perform out_step=" << out_step);
+	for(unsigned iInputChannel = 0; iInputChannel < nInputChannels; iInputChannel++) {
+		for(unsigned iPolarization = 0; iPolarization < nPolarizations; iPolarization++) {
+			for(unsigned iPart = 0; iPart < nParts; iPart++) {
+				//DEBUG("FilterbankEngineCUDA::perform ipart " << ipart << " of " << npart);
+				uint64_t inOffset = iPart * inStep;
+				uint64_t outOffset = iPart * outStep;
+				//DEBUG("FilterbankEngineCUDA::perform offsets in=" << in_offset << " out=" << out_offset);
+				float* inputPtr = const_cast<float *>(in->get_datptr(iInputChannel, iPolarization)) + inOffset;
+				//DEBUG("FilterbankEngineCUDA::perform FORWARD FFT inptr=" << input_ptr << " outptr=" << cscratch);
 				if(_realToComplex) {
-					result = cufftExecR2C(_planForward, input_ptr, cscratch);
+					result = cufftExecR2C(_planForward, inputPtr, cscratch);
 					if(result != CUFFT_SUCCESS) {
 						throw CUFFTError(result, "FilterbankEngineCUDA::perform", "cufftExecR2C");
 					}
 					CHECK_ERROR("FilterbankEngineCUDA::perform cufftExecR2C FORWARD", _stream);
 				} else {
-					float2 *cin = (float2 *)input_ptr;
+					float2* cin = (float2*)inputPtr;
 					result = cufftExecC2C(_planForward, cin, cscratch, CUFFT_FORWARD);
 					if(result != CUFFT_SUCCESS) {
 						throw CUFFTError(result, "FilterbankEngineCUDA::perform", "cufftExecC2C");
@@ -187,7 +178,7 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 				}
 				if(_convolutionKernel) {
 					// complex numbers offset(_convolutionKernel is float2*)
-					unsigned offset = ichan * _nChannelSubbands * _frequencyResolution;
+					unsigned offset = iInputChannel * _nChannelSubbands * _frequencyResolution;
 					DEBUG("FilterbankEngineCUDA::perform _multiply dedipersion kernel _stream=" << _stream);
 					k_multiply<<<_multiply.get_nblock(), _multiply.get_nthread(), 0, _stream>>>(cscratch, _convolutionKernel + offset);
 					CHECK_ERROR("FilterbankEngineCUDA::perform _multiply", _stream);
@@ -201,12 +192,13 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					CHECK_ERROR("FilterbankEngineCUDA::perform cufftExecC2C BACKWARD", _stream);
 				}
 				if(out) {
-					output_ptr = out->get_datptr(ichan * _nChannelSubbands, ipol) + out_offset;
-					output_span = out->get_datptr(ichan * _nChannelSubbands + 1, ipol) - out->get_datptr(ichan * _nChannelSubbands, ipol);
+					float* outputPtr = out->get_datptr(iInputChannel * _nChannelSubbands, iPolarization) + outOffset;
+					uint64_t outputSpan = 	out->get_datptr(iInputChannel * _nChannelSubbands + 1, iPolarization)
+								- out->get_datptr(iInputChannel * _nChannelSubbands, iPolarization);
 					//
 					const float2* input = cscratch + _nFilterPosition;
-					unsigned input_stride = _frequencyResolution;
-					unsigned to_copy = _nKeep;
+					unsigned inputStride = _frequencyResolution;
+					unsigned toCopy = _nKeep;
 					{
 						dim3 threads;
 						threads.x = _multiply.get_nthread();
@@ -218,13 +210,13 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 						}
 						blocks.y = _nChannelSubbands;
 						// divide by two for complex data
-						float2 *output_base = (float2 *)output_ptr;
-						unsigned output_stride = output_span / 2;
-						DEBUG("FilterbankEngineCUDA::perform output base=" << output_base << " stride=" << output_stride);
-						DEBUG("FilterbankEngineCUDA::perform input base=" << input << " stride=" << input_stride);
-						DEBUG("FilterbankEngineCUDA::perform to_copy=" << to_copy);
-						k_ncopy<<<blocks, threads, 0, _stream>>>(output_base, output_stride,
-											 input, input_stride, to_copy);
+						float2* outputBase = (float2*)outputPtr;
+						unsigned outputStride = outputSpan / 2;
+						DEBUG("FilterbankEngineCUDA::perform output base=" << outputBase << " stride=" << outputStride);
+						DEBUG("FilterbankEngineCUDA::perform input base=" << input << " stride=" << inputStride);
+						DEBUG("FilterbankEngineCUDA::perform to_copy=" << toCopy);
+						k_ncopy<<<blocks, threads, 0, _stream>>>(outputBase, outputStride,
+											 input, inputStride, toCopy);
 						CHECK_ERROR("FilterbankEngineCUDA::perform ncopy", _stream);
 					}
 				} // if not benchmarking
