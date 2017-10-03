@@ -39,8 +39,8 @@ __global__ void k_ncopy(float2* output_data, unsigned output_stride,
 			unsigned to_copy)
 {
 	output_data += blockIdx.y * output_stride;
-	input_data += blockIdx.y * input_stride;	
-	unsigned index = blockIdx.x * blockDim.x + threadIdx.x;	
+	input_data += blockIdx.y * input_stride;
+	unsigned index = blockIdx.x * blockDim.x + threadIdx.x;
 	if(index < to_copy) {
 		output_data[index] = input_data[index];
 	}
@@ -55,10 +55,10 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 	//
 	_frequencyResolution = filterbank->get_freq_res();
 	_nChannelSubbands = filterbank->get_nchan_subband();
-	_realToComplex =(filterbank->get_input()->get_state() == Signal::Nyquist);	
+	_realToComplex =(filterbank->get_input()->get_state() == Signal::Nyquist);
 	DEBUG("FilterbankEngineCUDA::setup _nChannelSubbands=" << _nChannelSubbands
-		<< " _frequencyResolution=" << _frequencyResolution);	
-	DEBUG("FilterbankEngineCUDA::setup scratch=" << scratch);	
+		<< " _frequencyResolution=" << _frequencyResolution);
+	DEBUG("FilterbankEngineCUDA::setup scratch=" << scratch);
 	cufftResult result;
 	if(_realToComplex) {
 		DEBUG("FilterbankEngineCUDA::setup plan size=" << _frequencyResolution*_nChannelSubbands*2);
@@ -74,14 +74,14 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 			throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
 						"cufftPlan1d(_planForward, CUFFT_C2C)");
 		}
-	}	
+	}
 	DEBUG("FilterbankEngineCUDA::setup setting _stream=" << _stream);
 	result = cufftSetStream(_planForward, _stream);
 	if(result != CUFFT_SUCCESS) {
 		throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
 					"cufftSetStream(_planForward)");
-	}	
-	DEBUG("FilterbankEngineCUDA::setup fwd FFT plan set");	
+	}
+	DEBUG("FilterbankEngineCUDA::setup fwd FFT plan set");
 	if(_frequencyResolution > 1) {
 		result = cufftPlan1d(&_planBackward, _frequencyResolution, CUFFT_C2C, _nChannelSubbands);
 		if(result != CUFFT_SUCCESS) {
@@ -92,25 +92,25 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 		if(result != CUFFT_SUCCESS) {
 			throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
 						"cufftSetStream(_planBackward)");
-		}	
+		}
 		DEBUG("FilterbankEngineCUDA::setup bwd FFT plan set");
-	}	
-	_nKeep = _frequencyResolution;	
+	}
+	_nKeep = _frequencyResolution;
 	_multiply.init();
-	_multiply.set_nelement(_nChannelSubbands * _frequencyResolution);	
+	_multiply.set_nelement(_nChannelSubbands * _frequencyResolution);
 	if(filterbank->has_response()) {
-		const dsp::Response* response = filterbank->get_response();	
+		const dsp::Response* response = filterbank->get_response();
 		unsigned nchan = response->get_nchan();
 		unsigned ndat = response->get_ndat();
-		unsigned ndim = response->get_ndim();	
+		unsigned ndim = response->get_ndim();
 		assert( nchan == filterbank->get_nchan() );
 		assert( ndat == _frequencyResolution );
-		assert( ndim == 2 ); // complex	
+		assert( ndim == 2 ); // complex
 		unsigned mem_size = nchan * ndat * ndim * sizeof(cufftReal);	
 		// allocate space for the convolution kernel
-		cudaMalloc((void**)&_convolutionKernel, mem_size);	
+		cudaMalloc((void**)&_convolutionKernel, mem_size);
 		_nFilterPosition = response->get_impulse_pos();
-		unsigned nfilt_tot = _nFilterPosition + response->get_impulse_neg();	
+		unsigned nfilt_tot = _nFilterPosition + response->get_impulse_neg();
 		// points kept from each small fft
 		_nKeep = _frequencyResolution - nfilt_tot;
 		// copy the kernel accross
@@ -133,7 +133,7 @@ void FilterbankEngineCUDA::finish()
 	check_error_stream("FilterbankEngineCUDA::finish", _stream);
 }
 
-void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries * out, 
+void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries * out,
 					uint64_t npart, const uint64_t in_step, const uint64_t out_step)
 {
 	verbose = dsp::Operation::record_time || dsp::Operation::verbose;
