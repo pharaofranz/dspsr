@@ -67,51 +67,13 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 	unsigned planSize = _realToComplex ? _frequencyResolution*_nChannelSubbands*2 : _frequencyResolution*_nChannelSubbands;
 	cufftType planType = _realToComplex ? CUFFT_R2C : CUFFT_C2C;
 	EXEC_OR_THROW(cufftPlan1d(&_planForward, planSize, planType, 1))
-	/*
-	if(_realToComplex) {
-		DEBUG("FilterbankEngineCUDA::setup plan size=" << _frequencyResolution*_nChannelSubbands*2);
-		result = cufftPlan1d(&_planForward, _frequencyResolution*_nChannelSubbands*2, CUFFT_R2C, 1);
-		if(result != CUFFT_SUCCESS) {
-			throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
-						"cufftPlan1d(_planForward, CUFFT_R2C)");
-		}
-	} else {
-		DEBUG("FilterbankEngineCUDA::setup plan size=" << _frequencyResolution*_nChannelSubbands);
-		result = cufftPlan1d(&_planForward, _frequencyResolution*_nChannelSubbands, CUFFT_C2C, 1);
-		if(result != CUFFT_SUCCESS) {
-			throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
-						"cufftPlan1d(_planForward, CUFFT_C2C)");
-		}
-	}
-	*/
 	// setup stream
 	DEBUG("FilterbankEngineCUDA::setup setting _stream=" << _stream);
 	EXEC_OR_THROW(cufftSetStream(_planForward, _stream))
-	/*
-	result = cufftSetStream(_planForward, _stream);
-	if(result != CUFFT_SUCCESS) {
-		throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
-					"cufftSetStream(_planForward)");
-	}
-	*/
 	DEBUG("FilterbankEngineCUDA::setup fwd FFT plan set");
 	if(_frequencyResolution > 1) {
 		EXEC_OR_THROW(cufftPlan1d(&_planBackward, _frequencyResolution, CUFFT_C2C, _nChannelSubbands))
-		/*
-		result = cufftPlan1d(&_planBackward, _frequencyResolution, CUFFT_C2C, _nChannelSubbands);
-		if(result != CUFFT_SUCCESS) {
-			throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
-						 "cufftPlan1d(_planBackward)");
-		}
-		*/
 		EXEC_OR_THROW(cufftSetStream(_planBackward, _stream))
-		/*
-		result = cufftSetStream(_planBackward, _stream);
-		if(result != CUFFT_SUCCESS) {
-			throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
-						"cufftSetStream(_planBackward)");
-		}
-		*/
 		DEBUG("FilterbankEngineCUDA::setup bwd FFT plan set");
 	}
 	_nKeep = _frequencyResolution;
@@ -156,7 +118,7 @@ void FilterbankEngineCUDA::_calculateDispatchDimensions(dim3& threads, dim3& blo
 {
 	threads.x = _multiply.get_nthread();
 	blocks.x = _nKeep / threads.x;
-	if(_nKeep % threads.x) { // ensure there's enouch blocks to process all data
+	if(_nKeep % threads.x) { // ensure there's enough blocks to process all data
 		blocks.x++;
 	}
 	blocks.y = _nChannelSubbands;
@@ -176,21 +138,21 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 	float2* cscratch = (float2*)_scratch;
 	//
 	cufftResult result;
-	//DEBUG("FilterbankEngineCUDA::perform input_nchan=" << input_nchan);
-	//DEBUG("FilterbankEngineCUDA::perform npol=" << npol);
-	//DEBUG("FilterbankEngineCUDA::perform npart=" << npart);
-	//DEBUG("FilterbankEngineCUDA::perform _nKeep=" << _nKeep);
-	//DEBUG("FilterbankEngineCUDA::perform in_step=" << in_step);
-	//DEBUG("FilterbankEngineCUDA::perform out_step=" << out_step);
+	DEBUG("FilterbankEngineCUDA::perform nInputChannels=" << nInputChannels);
+	DEBUG("FilterbankEngineCUDA::perform nPolarizations=" << nPolarizations);
+	DEBUG("FilterbankEngineCUDA::perform nParts=" << nParts);
+	DEBUG("FilterbankEngineCUDA::perform _nKeep=" << _nKeep);
+	DEBUG("FilterbankEngineCUDA::perform inStep=" << inStep);
+	DEBUG("FilterbankEngineCUDA::perform outStep=" << outStep);
 	for(unsigned iInputChannel = 0; iInputChannel < nInputChannels; iInputChannel++) {
 		for(unsigned iPolarization = 0; iPolarization < nPolarizations; iPolarization++) {
 			for(unsigned iPart = 0; iPart < nParts; iPart++) {
-				//DEBUG("FilterbankEngineCUDA::perform ipart " << ipart << " of " << npart);
+				DEBUG("FilterbankEngineCUDA::perform iPart " << iPart << " of " << nParts);
 				uint64_t inOffset = iPart * inStep;
 				uint64_t outOffset = iPart * outStep;
-				//DEBUG("FilterbankEngineCUDA::perform offsets in=" << in_offset << " out=" << out_offset);
+				DEBUG("FilterbankEngineCUDA::perform offsets in=" << inOffset << " out=" << outOffset);
 				float* inputPtr = const_cast<float *>(in->get_datptr(iInputChannel, iPolarization)) + inOffset;
-				//DEBUG("FilterbankEngineCUDA::perform FORWARD FFT inptr=" << input_ptr << " outptr=" << cscratch);
+				DEBUG("FilterbankEngineCUDA::perform FORWARD FFT inptr=" << inputPtr << " outptr=" << cscratch);
 				if(_realToComplex) {
 					EXEC_OR_THROW(cufftExecR2C(_planForward, inputPtr, cscratch))
 				} else {
@@ -216,19 +178,17 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					const float2* input = cscratch + _nFilterPosition;
 					unsigned inputStride = _frequencyResolution;
 					unsigned toCopy = _nKeep;
-					{
-						dim3 threads, blocks;
-						_calculateDispatchDimensions(threads, blocks);
-						// divide by two for complex data
-						float2* outputBase = (float2*)outputPtr;
-						unsigned outputStride = outputSpan / 2;
-						DEBUG("FilterbankEngineCUDA::perform output base=" << outputBase << " stride=" << outputStride);
-						DEBUG("FilterbankEngineCUDA::perform input base=" << input << " stride=" << inputStride);
-						DEBUG("FilterbankEngineCUDA::perform to_copy=" << toCopy);
-						k_ncopy<<<blocks, threads, 0, _stream>>>(outputBase, outputStride,
-											 input, inputStride, toCopy);
-						CHECK_ERROR("FilterbankEngineCUDA::perform ncopy", _stream);
-					}
+					dim3 threads, blocks;
+					_calculateDispatchDimensions(threads, blocks);
+					// divide by two for complex data
+					float2* outputBase = (float2*)outputPtr;
+					unsigned outputStride = outputSpan / 2;
+					DEBUG("FilterbankEngineCUDA::perform output base=" << outputBase << " stride=" << outputStride);
+					DEBUG("FilterbankEngineCUDA::perform input base=" << input << " stride=" << inputStride);
+					DEBUG("FilterbankEngineCUDA::perform to_copy=" << toCopy);
+					k_ncopy<<<blocks, threads, 0, _stream>>>(outputBase, outputStride,
+										 input, inputStride, toCopy);
+					CHECK_ERROR("FilterbankEngineCUDA::perform ncopy", _stream);
 				} // if not benchmarking
 			} // for each part
 		} // for each polarization
