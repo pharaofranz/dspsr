@@ -188,7 +188,7 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					k_ncopy<<<blocks, threads, 0, _stream>>>(outputBase, outputStride,
 										 input, inputStride, toCopy);
 					CHECK_ERROR("FilterbankEngineCUDA::perform ncopy", _stream);
-				} // if not benchmarking
+				}
 			} // for each part
 		} // for each polarization
 	} // for each channel
