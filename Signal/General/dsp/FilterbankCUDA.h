@@ -44,6 +44,7 @@ public:
 protected:
 	bool verbose;
 private:
+	void _calculateDispatchDimensions(dim3& threads, dim3& blocks);
 	//! forward fft plan
 	cufftHandle _planForward;
 	//! backward fft plan
@@ -51,11 +52,11 @@ private:
 	//! Complex-valued data
 	bool _realToComplex;
 	//! inplace FFT in CUDA memory
-	float2* d_fft;
+	float2* _dFft;
 	//! convolution kernel in CUDA memory
 	float2* _convolutionKernel;
 	//! device scratch sapce
-	float* scratch;
+	float* _scratch;
 	//
 	unsigned _nChannelSubbands;
 	unsigned _frequencyResolution;

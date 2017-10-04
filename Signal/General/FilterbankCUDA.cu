@@ -26,12 +26,15 @@ void check_error_stream(const char*, cudaStream_t);
 #define CHECK_ERROR(x,y)
 #endif
 
-__global__ void k_multiply(float2* d_fft, float2* kernel)
+#define EXEC_OR_THROW(cmd) \
+result = cmd; if(result != CUFFT_SUCCESS) { throw CUFFTError(result, __func__, "cmd"); }
+
+__global__ void k_multiply(float2* dFft, float2* kernel)
 {
 	int i = blockIdx.x*blockDim.x + threadIdx.x;
-	float x = d_fft[i].x * kernel[i].x - d_fft[i].y * kernel[i].y;
-	d_fft[i].y = d_fft[i].x * kernel[i].y + d_fft[i].y * kernel[i].x;
-	d_fft[i].x = x;
+	float x = dFft[i].x * kernel[i].x - dFft[i].y * kernel[i].y;
+	dFft[i].y = dFft[i].x * kernel[i].y + dFft[i].y * kernel[i].x;
+	dFft[i].x = x;
 }
 
 __global__ void k_ncopy(float2* outputData, unsigned outputStride,
@@ -55,10 +58,10 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 	//
 	_frequencyResolution = filterbank->get_freq_res();
 	_nChannelSubbands = filterbank->get_nchan_subband();
-	_realToComplex =(filterbank->get_input()->get_state() == Signal::Nyquist);
+	_realToComplex = (filterbank->get_input()->get_state() == Signal::Nyquist);
 	DEBUG("FilterbankEngineCUDA::setup _nChannelSubbands=" << _nChannelSubbands
 		<< " _frequencyResolution=" << _frequencyResolution);
-	DEBUG("FilterbankEngineCUDA::setup scratch=" << scratch);
+	DEBUG("FilterbankEngineCUDA::setup scratch=" << _scratch);
 	cufftResult result;
 	if(_realToComplex) {
 		DEBUG("FilterbankEngineCUDA::setup plan size=" << _frequencyResolution*_nChannelSubbands*2);
@@ -123,14 +126,24 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 	}
 }
 
-void FilterbankEngineCUDA::set_scratch(float * _scratch)
+void FilterbankEngineCUDA::set_scratch(float* scratch)
 {
-	scratch = _scratch;
+	_scratch = scratch;
 }
 
 void FilterbankEngineCUDA::finish()
 {
 	check_error_stream("FilterbankEngineCUDA::finish", _stream);
+}
+
+void FilterbankEngineCUDA::_calculateDispatchDimensions(dim3& threads, dim3& blocks)
+{
+	threads.x = _multiply.get_nthread();
+	blocks.x = _nKeep / threads.x;
+	if(_nKeep % threads.x) { // ensure there's enouch blocks to process all data
+		blocks.x++;
+	}
+	blocks.y = _nChannelSubbands;
 }
 
 void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries * out,
@@ -143,8 +156,8 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 	const unsigned nOutputChannels = out->get_nchan();
 	DEBUG("FilterbankEngineCUDA::perform _stream=" << _stream);
 	// GPU scratch space
-	DEBUG("FilterbankEngineCUDA::perform scratch=" << scratch);
-	float2* cscratch = (float2*)scratch;
+	DEBUG("FilterbankEngineCUDA::perform scratch=" << _scratch);
+	float2* cscratch = (float2*)_scratch;
 	//
 	cufftResult result;
 	//DEBUG("FilterbankEngineCUDA::perform input_nchan=" << input_nchan);
@@ -163,18 +176,24 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 				float* inputPtr = const_cast<float *>(in->get_datptr(iInputChannel, iPolarization)) + inOffset;
 				//DEBUG("FilterbankEngineCUDA::perform FORWARD FFT inptr=" << input_ptr << " outptr=" << cscratch);
 				if(_realToComplex) {
+					EXEC_OR_THROW(cufftExecR2C(_planForward, inputPtr, cscratch))
+					/*
 					result = cufftExecR2C(_planForward, inputPtr, cscratch);
 					if(result != CUFFT_SUCCESS) {
 						throw CUFFTError(result, "FilterbankEngineCUDA::perform", "cufftExecR2C");
 					}
 					CHECK_ERROR("FilterbankEngineCUDA::perform cufftExecR2C FORWARD", _stream);
+					*/
 				} else {
 					float2* cin = (float2*)inputPtr;
+					EXEC_OR_THROW(cufftExecC2C(_planForward, cin, cscratch, CUFFT_FORWARD))
+					/*
 					result = cufftExecC2C(_planForward, cin, cscratch, CUFFT_FORWARD);
 					if(result != CUFFT_SUCCESS) {
 						throw CUFFTError(result, "FilterbankEngineCUDA::perform", "cufftExecC2C");
 					}
 					CHECK_ERROR("FilterbankEngineCUDA::perform cufftExecC2C FORWARD", _stream);
+					*/
 				}
 				if(_convolutionKernel) {
 					// complex numbers offset(_convolutionKernel is float2*)
@@ -185,11 +204,14 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 				}
 				if(_planBackward) {
 					DEBUG("FilterbankEngineCUDA::perform BACKWARD FFT");
+					EXEC_OR_THROW(cufftExecC2C(_planBackward, cscratch, cscratch, CUFFT_INVERSE))
+					/*
 					result = cufftExecC2C(_planBackward, cscratch, cscratch, CUFFT_INVERSE);
 					if(result != CUFFT_SUCCESS) {
 						throw CUFFTError(result, "FilterbankEngineCUDA::perform", "cufftExecC2C(inverse)");
 					}
 					CHECK_ERROR("FilterbankEngineCUDA::perform cufftExecC2C BACKWARD", _stream);
+					*/
 				}
 				if(out) {
 					float* outputPtr = out->get_datptr(iInputChannel * _nChannelSubbands, iPolarization) + outOffset;
@@ -200,15 +222,8 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					unsigned inputStride = _frequencyResolution;
 					unsigned toCopy = _nKeep;
 					{
-						dim3 threads;
-						threads.x = _multiply.get_nthread();
-						//
-						dim3 blocks;
-						blocks.x = _nKeep / threads.x;
-						if(_nKeep % threads.x) {
-							blocks.x++;
-						}
-						blocks.y = _nChannelSubbands;
+						dim3 threads, blocks;
+						_calculateDispatchDimensions(threads, blocks);
 						// divide by two for complex data
 						float2* outputBase = (float2*)outputPtr;
 						unsigned outputStride = outputSpan / 2;
