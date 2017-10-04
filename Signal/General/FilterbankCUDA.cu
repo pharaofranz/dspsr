@@ -128,7 +128,6 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					uint64_t nParts, const uint64_t inStep, const uint64_t outStep)
 {
 	verbose = dsp::Operation::record_time || dsp::Operation::verbose;
-	//
 	const unsigned nPolarizations = in->get_npol();
 	const unsigned nInputChannels = in->get_nchan();
 	const unsigned nOutputChannels = out->get_nchan();
@@ -136,7 +135,6 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 	// GPU scratch space
 	DEBUG("FilterbankEngineCUDA::perform scratch=" << _scratch);
 	float2* cscratch = (float2*)_scratch;
-	//
 	cufftResult result;
 	DEBUG("FilterbankEngineCUDA::perform nInputChannels=" << nInputChannels);
 	DEBUG("FilterbankEngineCUDA::perform nPolarizations=" << nPolarizations);
