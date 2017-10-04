@@ -151,7 +151,7 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 				uint64_t inOffset = iPart * inStep;
 				uint64_t outOffset = iPart * outStep;
 				DEBUG("FilterbankEngineCUDA::perform offsets in=" << inOffset << " out=" << outOffset);
-				float* inputPtr = const_cast<float *>(in->get_datptr(iInputChannel, iPolarization)) + inOffset;
+				float* inputPtr = const_cast<float*>(in->get_datptr(iInputChannel, iPolarization)) + inOffset;
 				DEBUG("FilterbankEngineCUDA::perform FORWARD FFT inptr=" << inputPtr << " outptr=" << cscratch);
 				if(_realToComplex) {
 					EXEC_OR_THROW(cufftExecR2C(_planForward, inputPtr, cscratch))
