@@ -174,7 +174,6 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					float* outputPtr = out->get_datptr(iInputChannel * _nChannelSubbands, iPolarization) + outOffset;
 					uint64_t outputSpan = 	out->get_datptr(iInputChannel * _nChannelSubbands + 1, iPolarization)
 								- out->get_datptr(iInputChannel * _nChannelSubbands, iPolarization);
-					//
 					const float2* input = cscratch + _nFilterPosition;
 					unsigned inputStride = _frequencyResolution;
 					unsigned toCopy = _nKeep;
