@@ -63,6 +63,11 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 		<< " _frequencyResolution=" << _frequencyResolution);
 	DEBUG("FilterbankEngineCUDA::setup scratch=" << _scratch);
 	cufftResult result;
+	// setup forward plan
+	unsigned planSize = _realToComplex ? _frequencyResolution*_nChannelSubbands*2 : _frequencyResolution*_nChannelSubbands;
+	cufftType planType = _realToComplex ? CUFFT_R2C : CUFFT_C2C;
+	EXEC_OR_THROW(cufftPlan1d(&_planForward, planSize, planType, 1))
+	/*
 	if(_realToComplex) {
 		DEBUG("FilterbankEngineCUDA::setup plan size=" << _frequencyResolution*_nChannelSubbands*2);
 		result = cufftPlan1d(&_planForward, _frequencyResolution*_nChannelSubbands*2, CUFFT_R2C, 1);
@@ -78,24 +83,35 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 						"cufftPlan1d(_planForward, CUFFT_C2C)");
 		}
 	}
+	*/
+	// setup stream
 	DEBUG("FilterbankEngineCUDA::setup setting _stream=" << _stream);
+	EXEC_OR_THROW(cufftSetStream(_planForward, _stream))
+	/*
 	result = cufftSetStream(_planForward, _stream);
 	if(result != CUFFT_SUCCESS) {
 		throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
 					"cufftSetStream(_planForward)");
 	}
+	*/
 	DEBUG("FilterbankEngineCUDA::setup fwd FFT plan set");
 	if(_frequencyResolution > 1) {
+		EXEC_OR_THROW(cufftPlan1d(&_planBackward, _frequencyResolution, CUFFT_C2C, _nChannelSubbands))
+		/*
 		result = cufftPlan1d(&_planBackward, _frequencyResolution, CUFFT_C2C, _nChannelSubbands);
 		if(result != CUFFT_SUCCESS) {
 			throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
 						 "cufftPlan1d(_planBackward)");
 		}
+		*/
+		EXEC_OR_THROW(cufftSetStream(_planBackward, _stream))
+		/*
 		result = cufftSetStream(_planBackward, _stream);
 		if(result != CUFFT_SUCCESS) {
 			throw CUFFTError(	result, "FilterbankEngineCUDA::setup",
 						"cufftSetStream(_planBackward)");
 		}
+		*/
 		DEBUG("FilterbankEngineCUDA::setup bwd FFT plan set");
 	}
 	_nKeep = _frequencyResolution;
@@ -177,23 +193,9 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 				//DEBUG("FilterbankEngineCUDA::perform FORWARD FFT inptr=" << input_ptr << " outptr=" << cscratch);
 				if(_realToComplex) {
 					EXEC_OR_THROW(cufftExecR2C(_planForward, inputPtr, cscratch))
-					/*
-					result = cufftExecR2C(_planForward, inputPtr, cscratch);
-					if(result != CUFFT_SUCCESS) {
-						throw CUFFTError(result, "FilterbankEngineCUDA::perform", "cufftExecR2C");
-					}
-					CHECK_ERROR("FilterbankEngineCUDA::perform cufftExecR2C FORWARD", _stream);
-					*/
 				} else {
 					float2* cin = (float2*)inputPtr;
 					EXEC_OR_THROW(cufftExecC2C(_planForward, cin, cscratch, CUFFT_FORWARD))
-					/*
-					result = cufftExecC2C(_planForward, cin, cscratch, CUFFT_FORWARD);
-					if(result != CUFFT_SUCCESS) {
-						throw CUFFTError(result, "FilterbankEngineCUDA::perform", "cufftExecC2C");
-					}
-					CHECK_ERROR("FilterbankEngineCUDA::perform cufftExecC2C FORWARD", _stream);
-					*/
 				}
 				if(_convolutionKernel) {
 					// complex numbers offset(_convolutionKernel is float2*)
@@ -205,13 +207,6 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 				if(_planBackward) {
 					DEBUG("FilterbankEngineCUDA::perform BACKWARD FFT");
 					EXEC_OR_THROW(cufftExecC2C(_planBackward, cscratch, cscratch, CUFFT_INVERSE))
-					/*
-					result = cufftExecC2C(_planBackward, cscratch, cscratch, CUFFT_INVERSE);
-					if(result != CUFFT_SUCCESS) {
-						throw CUFFTError(result, "FilterbankEngineCUDA::perform", "cufftExecC2C(inverse)");
-					}
-					CHECK_ERROR("FilterbankEngineCUDA::perform cufftExecC2C BACKWARD", _stream);
-					*/
 				}
 				if(out) {
 					float* outputPtr = out->get_datptr(iInputChannel * _nChannelSubbands, iPolarization) + outOffset;
