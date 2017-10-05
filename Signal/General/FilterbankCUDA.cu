@@ -29,6 +29,12 @@ void check_error_stream(const char*, cudaStream_t);
 #define EXEC_OR_THROW(cmd) \
 result = cmd; if(result != CUFFT_SUCCESS) { throw CUFFTError(result, __func__, "cmd"); }
 
+/**
+ * Multiplication function for applying convolution kernel to data
+ * 
+ * @param dFft frequency domain data
+ * @param kernel convolution kernel
+ */
 __global__ void k_multiply(float2* dFft, float2* kernel)
 {
 	int i = blockIdx.x*blockDim.x + threadIdx.x;
@@ -37,6 +43,15 @@ __global__ void k_multiply(float2* dFft, float2* kernel)
 	dFft[i].x = x;
 }
 
+/**
+ * Copy function for copying data
+ * 
+ * @param outputData output data
+ * @param outputStride stride of output data
+ * @param inputData input data
+ * @param inputStride stride of input data
+ * @param toCopy number of elements to copy, preventing out of bounds memory access
+ */
 __global__ void k_ncopy(float2* outputData, unsigned outputStride,
 			const float2* inputData, unsigned inputStride,
 			unsigned toCopy)
@@ -51,6 +66,11 @@ __global__ void k_ncopy(float2* outputData, unsigned outputStride,
 
 using namespace std;
 
+/**
+ * Initialization function to setup FilterbankEngineCUDA for use.
+ * 
+ * @param filterbank pointer to filterbank class that is setting up the engine for usage.
+ */
 void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 {
 	// the CUDA engine does not maintain/compute the passband
@@ -104,17 +124,33 @@ void FilterbankEngineCUDA::setup(dsp::Filterbank* filterbank)
 	}
 }
 
+/**
+ * Setup scratch space for performing FFT calculations
+ * 
+ * @param scratch pointer to memory to use for scratch
+ */
 void FilterbankEngineCUDA::set_scratch(float* scratch)
 {
 	_scratch = scratch;
 }
 
+/**
+ * Perform any operations that need to be performed after processing data. 
+ * 
+ * eg. error checking
+ */
 void FilterbankEngineCUDA::finish()
 {
 	check_error_stream("FilterbankEngineCUDA::finish", _stream);
 }
 
-void FilterbankEngineCUDA::_calculateDispatchDimensions(dim3& threads, dim3& blocks)
+/**
+ * Calculate the thread and block dimensions for invocation of copy function
+ * 
+ * @param threads thread dimensions
+ * @param blocks block dimensions
+ */
+void FilterbankEngineCUDA::_calculateDispatchDimensionsForCopy(dim3& threads, dim3& blocks)
 {
 	threads.x = _multiply.get_nthread();
 	blocks.x = _nKeep / threads.x;
@@ -124,6 +160,15 @@ void FilterbankEngineCUDA::_calculateDispatchDimensions(dim3& threads, dim3& blo
 	blocks.y = _nChannelSubbands;
 }
 
+/**
+ * Performs the Convolving De-Dispersion filtering.
+ * 
+ * @param in[in] input time series data
+ * @param out[out] output time series data
+ * @param nParts number of parts the forward FFT is broken down into
+ * @param inStep how far to step forward through the input data for each FFT part
+ * @param outStep how far to step forward through the output data for each FFT part
+ */
 void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries * out,
 					uint64_t nParts, const uint64_t inStep, const uint64_t outStep)
 {
@@ -176,7 +221,7 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					unsigned inputStride = _frequencyResolution;
 					unsigned toCopy = _nKeep;
 					dim3 threads, blocks;
-					_calculateDispatchDimensions(threads, blocks);
+					_calculateDispatchDimensionsForCopy(threads, blocks);
 					// divide by two for complex data
 					float2* outputBase = (float2*)outputPtr;
 					unsigned outputStride = outputSpan / 2;

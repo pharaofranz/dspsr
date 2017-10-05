@@ -44,7 +44,7 @@ public:
 protected:
 	bool verbose;
 private:
-	void _calculateDispatchDimensions(dim3& threads, dim3& blocks);
+	void _calculateDispatchDimensionsForCopy(dim3& threads, dim3& blocks);
 	//! forward fft plan
 	cufftHandle _planForward;
 	//! backward fft plan
