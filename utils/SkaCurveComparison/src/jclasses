@@ -1,0 +1,8 @@
+archidevsys/co/nz/skapt/curvecomparison/AppCurveComp.java
+archidevsys/co/nz/skapt/curvecomparison/curve/Curve.java
+archidevsys/co/nz/skapt/curvecomparison/curve/CurveComparison.java
+archidevsys/co/nz/skapt/curvecomparison/curve/DataRow.java
+archidevsys/co/nz/skapt/curvecomparison/misc/CurveCompConstants.java
+archidevsys/co/nz/skapt/curvecomparison/misc/CurveCompContext.java
+archidevsys/co/nz/skapt/curvecomparison/misc/ProcessLogManager.java
+archidevsys/co/nz/skapt/curvecomparison/misc/Utility.java
