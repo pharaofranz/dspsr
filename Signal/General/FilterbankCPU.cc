@@ -145,14 +145,14 @@ void FilterbankEngineCPU::finish()
  * 
  * @param scratch pointer to memory to use for scratch
  */
-void FilterbankEngineCPU::set_scratch(float* scratch)
+void FilterbankEngineCPU::set_scratch(float* scratchPtr)
 {
 	TESTING_LOG("FilterbankEngineCPU::set_scratch(" << scratch << ")");
 	unsigned bigFftSize = _nChannelSubbands * _frequencyResolution * 2;
 	if(_isRealToComplex) {
 		bigFftSize += 256;
 	}
-	_scratch = scratch;
+	scratch = scratchPtr;
 	_complexSpectrum[0] = scratch;
 	_complexSpectrum[1] = _complexSpectrum[0];
 	_complexTime = _complexSpectrum[1] + bigFftSize;
