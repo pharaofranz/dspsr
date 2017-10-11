@@ -51,7 +51,7 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
 	_nPointsToKeep = _frequencyResolution;
 	_nFilterPosition = 0;
 	//
-	if(filterbank->has_response()) {
+	if(filterbank->has_response()==true) {
 		_response = filterbank->get_response();
 		unsigned nChannels = _response->get_nchan();
 		unsigned nData = _response->get_ndat();
@@ -60,10 +60,10 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
 		assert(nChannels == filterbank->get_nchan());
 		assert(nData == _frequencyResolution);
 		assert(nDimensions == 2);
-		//! Complex samples dropped from beginning of cyclical convolution result
+		//! Complex samples discarded from beginning of cyclical convolution result
 		unsigned nFilterPositive = _response->get_impulse_pos();
 		_nFilterPosition = nFilterPositive;
-		//! Complex samples dropped from end of cyclical convolution result
+		//! Complex samples discarded from end of cyclical convolution result
 		unsigned nFilterNegative = _response->get_impulse_neg();
 		//! Total number of samples in convolution filter kernel
 		unsigned nFilterTotal = nFilterPositive + nFilterNegative;
@@ -105,20 +105,20 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
 				float* timeDomainInputPtr = const_cast<float*>(in->get_datptr(iInputChannel, iPolarization)) + inOffset;
 				float* frequencyDomainPtr = _complexSpectrum[iPolarization];
 				// perform forward FFT ot convert time domain data to the frequency domain
-				if(_isRealToComplex) {
+				if(_isRealToComplex==true) {
 					_forward->frc1d(_nFftSamples, frequencyDomainPtr, timeDomainInputPtr);
 				} else {
 					_forward->fcc1d(_nFftSamples, frequencyDomainPtr, timeDomainInputPtr);
 				}
 				// apply filter response if available
-				if(_response) {
+				if(_response!=nullptr) {
 					_response->operate(	_complexSpectrum[iPolarization], 
 								iPolarization,
 								iInputChannel*_nChannelSubbands,
 								_nChannelSubbands);
 				}
 				// output data if output is available
-				if(out) {
+				if(out!=nullptr) {
 					for(uint64_t iSubband = 0; iSubband < _nChannelSubbands; iSubband++) {
 						// perform a backwards FFT for each sub-band to convert frequency domain
 						// data back into the time domain for output

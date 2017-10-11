@@ -77,7 +77,7 @@ inline void dsp::Filterbank::_makePreparations()
 		get_buffering_policy()->set_minimum_samples(nsamp_fft);
 	}
 	_prepareOutput();
-	if(_engine==true) {
+	if(_engine!=nullptr) {
 		_engine->setup(this);
 	} else {
 		_setupFftPlans();
@@ -108,13 +108,12 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	output->set_ndim( 2 );
 	output->set_state( Signal::Analytic );
 	//
-	WeightedTimeSeries* weighted_output;
-	weighted_output = dynamic_cast<WeightedTimeSeries*>(output.get());
+	WeightedTimeSeries* weighted_output = dynamic_cast<WeightedTimeSeries*>(output.get());
 	//
 	unsigned tres_ratio = nsamp_fft / freq_res;
 	TESTING_LOG_LINE;
 	//
-	if(weighted_output) {
+	if(weighted_output!=nullptr) {
 		weighted_output->set_reserve_kludge_factor(tres_ratio);		
 		//
 		weighted_output->set_reserve_kludge_factor(1);
@@ -128,13 +127,12 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	   offset is computed based on values that are about to be changed.
 	   This kludge allows the offsets to reflect the correct values
 	   that will be set later */
-	if(set_ndat) {
+	if(set_ndat==true) {
 		cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput reset ndat=" 
 			<< ndat << endl;
 		output->resize(ndat);
 	} else {
 		ndat = input->get_ndat() / tres_ratio;
-
 		cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput scrunch ndat=" 
 			<< ndat << endl;
 		output->resize(ndat);
@@ -151,7 +149,7 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	 * NOTE: that nsamp_fft already contains the extra factor of two required
 	 * when the input TimeSeries is Signal::Nyquist(real) sampled
 	 */
-	double ratechange = double(freq_res) / double(nsamp_fft);
+	double ratechange = static_cast<double>(freq_res) / static_cast<double>(nsamp_fft);
 	output->set_rate(input->get_rate() * ratechange);
 	TESTING_LOG_LINE;
 	if(freq_res == 1) {
@@ -165,7 +163,7 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	output->set_dc_centred(freq_res%2);
 	TESTING_LOG_LINE;
 	// dual sideband data produces a band swapped result
-	if(input->get_dual_sideband()) { 
+	if(input->get_dual_sideband()==true) { 
 		_nInputChannels = input->get_nchan();
 		if(_nInputChannels > 1) {
 			output->set_nsub_swap(_nInputChannels);
@@ -174,14 +172,14 @@ void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 		}
 	}
 	TESTING_LOG_LINE;
-	// increment the start time by the number of samples dropped from the fft
+	// increment the start time by the number of samples discarded from the fft
 	output->change_start_time(nfilt_pos);
 	TESTING_LOG_LINE;
 	cerrStream << isVerbose << "dsp::Filterbank::_prepareOutput start time += "
 		<< nfilt_pos << " samps -> " << output->get_start_time() << endl;
 	TESTING_LOG_LINE;
 	// enable the Response to record its effect on the output Timeseries
-	if(response) {
+	if(response!=nullptr) {
 		response->mark(output);
 	}
 	TESTING_LOG("_prepareOutput - end");
@@ -264,7 +262,6 @@ inline void dsp::Filterbank::_computeSampleCounts()
 	nfilt_neg = 0;
 	nfilt_tot = 0;
 	freq_res = 1;
-	n_fft = 0;
 	//
 	if(response) {
 		response->match(input, nchan);
@@ -320,12 +317,12 @@ void dsp::Filterbank::transformation()
 	cerrStream << isVerbose << "dsp::Filterbank::transformation input ndat=" 
 		<< input->get_ndat() << " nchan=" << _nInputChannels << endl;
 	//
-	if(!prepared) {
+	if(prepared == false) {
 		prepare();
 	}
 	_resizeOutput();
 	//
-	if(has_buffering_policy()) {
+	if(has_buffering_policy()==true) {
 		get_buffering_policy()->set_next_start(nsamp_step * npart);
 	}
 	uint64_t output_ndat = output->get_ndat();
@@ -345,7 +342,7 @@ void dsp::Filterbank::transformation()
 		" ndat=" << output->get_ndat() << 
 		" input_sample=" << output->get_input_sample() << endl;
 	//
-	if(!npart) {
+	if(npart == 0) {
 		cerrStream << isVerbose << "dsp::Filterbank::transformation empty result" << endl;
 		return;
 	}
@@ -374,13 +371,13 @@ inline void dsp::Filterbank::_filterbank()
 	// /////////////////////////////////////////////////////////////////////
 	// PERFORM FILTERBANK VIA ENGINE(could be on GPU with CUDA or on CPU)
 	// /////////////////////////////////////////////////////////////////////
-	if(_engine) {
+	if(_engine!=nullptr) {
 		//cerr << endl << "nsamp_fft=" << nsamp_fft << endl;
 		cerrStream << isVerbose << "have engine"<<endl;
 		//
 		_engine->set_scratch(_complexSpectrum[0]);
 		_engine->perform(input, output, npart, in_step, out_step);
-		if(Operation::record_time) {
+		if(Operation::record_time == true) {
 			_engine->finish();
 		}
 	}
