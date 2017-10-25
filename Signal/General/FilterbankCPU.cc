@@ -14,16 +14,6 @@
 #define TESTING_LOG_LINE
 #endif
 
-FilterbankEngineCPU::FilterbankEngineCPU()
-{
-	//
-}
-
-FilterbankEngineCPU::~FilterbankEngineCPU()
-{
-	//
-}
-
 /**
  * Initialization function to setup FilterbankEngineCPU for use.
  * 

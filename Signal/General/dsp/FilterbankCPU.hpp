@@ -13,8 +13,8 @@
 class FilterbankEngineCPU : public dsp::Filterbank::Engine
 {
     public:
-    FilterbankEngineCPU();
-    ~FilterbankEngineCPU();
+    FilterbankEngineCPU() {};
+    ~FilterbankEngineCPU() {};
     
     void setup(dsp::Filterbank* filterbank);
     
@@ -25,7 +25,7 @@ class FilterbankEngineCPU : public dsp::Filterbank::Engine
     
     void finish();
     
-    protected:
+    private:
     unsigned _frequencyResolution;
     unsigned _nChannelSubbands;
     bool _isRealToComplex;

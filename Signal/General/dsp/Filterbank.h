@@ -39,26 +39,26 @@ namespace dsp {
         void reserve();
         
         //! Get the minimum number of samples required for operation
-        uint64_t get_minimum_samples() { return nsamp_fft; }
+        uint64_t get_minimum_samples() noexcept { return nsamp_fft; }
         
         //! Get the minimum number of samples lost
-        uint64_t get_minimum_samples_lost() { return nsamp_overlap; }
+        uint64_t get_minimum_samples_lost() noexcept { return nsamp_overlap; }
         
         //! Set the number of channels into which the input will be divided
-        void set_nchan(unsigned _nchan) { nchan = _nchan; }
+        void set_nchan(unsigned _nchan) noexcept { nchan = _nchan; }
         
         //! Get the number of channels into which the input will be divided
-        unsigned get_nchan() const { return nchan; }
+        unsigned get_nchan() const noexcept { return nchan; }
         
-        unsigned get_nchan_subband() const {return nchan_subband; }
+        unsigned get_nchan_subband() const noexcept {return nchan_subband; }
         
         //! Set the frequency resolution factor
-        void set_freq_res(unsigned _freq_res) { freq_res = _freq_res; }
-        void set_frequency_resolution(unsigned fres) { freq_res = fres; }
+        void set_freq_res(unsigned _freq_res) noexcept { freq_res = _freq_res; }
+        void set_frequency_resolution(unsigned fres) noexcept { freq_res = fres; }
         
         //! Get the frequency resolution factor
-        unsigned get_freq_res() const { return freq_res; } 
-        unsigned get_frequency_resolution() const { return freq_res; }
+        unsigned get_freq_res() const noexcept { return freq_res; } 
+        unsigned get_frequency_resolution() const noexcept { return freq_res; }
         
         //! Engine used to perform discrete convolution step
         class Engine;

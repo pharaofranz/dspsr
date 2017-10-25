@@ -32,20 +32,20 @@ namespace dsp
     : _memory(0), _stream(0), _nChannel(1), 
       _frequencyResolution(0), _when(After) { }
 
-    void set_nchan (unsigned n) { _nChannel = n; }
-    unsigned get_nchan () const { return _nChannel; }
+    void set_nchan (unsigned n) noexcept { _nChannel = n; }
+    unsigned get_nchan () const noexcept { return _nChannel; }
 
-    void set_freq_res (unsigned n) { _frequencyResolution = n; }
-    unsigned get_freq_res () const { return _frequencyResolution; }
+    void set_freq_res (unsigned n) noexcept { _frequencyResolution = n; }
+    unsigned get_freq_res () const noexcept { return _frequencyResolution; }
 
-    void set_convolve_when (When w) { _when = w; }
-    When get_convolve_when () const { return _when; }
+    void set_convolve_when (When w) noexcept { _when = w; }
+    When get_convolve_when () const noexcept { return _when; }
 
     //! Set the device on which the unpacker will operate
-    void set_device (Memory* mem) { _memory = mem; }
+    void set_device (Memory* mem) noexcept { _memory = mem; }
 
     //! Set the stream information for the device
-    void set_stream (void* ptr) { _stream = ptr; }
+    void set_stream (void* ptr) noexcept { _stream = ptr; }
 
     //! Return a new Filterbank instance and configure it
     Filterbank* create ();

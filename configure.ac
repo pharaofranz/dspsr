@@ -15,7 +15,7 @@ AC_ARG_VAR([CUDA_NVCC_FLAGS], [CUDA nvcc flags (e.g. -arch, etc)])
 
 AC_PREFIX_DEFAULT([${PSRHOME:-"/usr/local"}${PSRHOME:+"/$LOGIN_ARCH"}])
 
-AX_CXX_COMPILE_STDCXX(11, [noext], [mandatory])
+#AX_CXX_COMPILE_STDCXX(11, [noext], [mandatory])
 
 if test x"$PSRHOME" = x; then
 	AC_MSG_WARN([The PSRHOME environment variable is not set])
@@ -70,6 +70,13 @@ if test x"$PSRHOME" = x; then
 		#
 		SWIN_DEBUG
 		SWIN_LOCAL
+
+		# set the compiler option 11 for -std=c++11, 14 for -std=c++14
+		# should run ./bootstrap to get effect for this change
+		AX_CXX_COMPILE_STDCXX(14, [noext], [mandatory])
+	
+		# prevent setting xFLAGS to default of -g -O2
+		AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 		#
 		# Checks for essential libraries
