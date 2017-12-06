@@ -22,7 +22,7 @@ nobase_include_HEADERS = dsp/ACFilterbank.h dsp/Detection.h	       \
 	dsp/Resize.h dsp/SKDetector.h dsp/SKMasker.h		       \
 	dsp/Pipeline.h dsp/SingleThread.h dsp/MultiThread.h            \
 	dsp/PolnSelect.h dsp/PolnReshape.h dsp/SpectralKurtosis.h \
-  dsp/SKComputer.h dsp/FilterbankCPU.hpp
+  dsp/SKComputer.h dsp/FilterbankCPU.h
 
 libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
 	cross_detect.ic stokes_detect.c stokes_detect.h		     \
@@ -92,10 +92,14 @@ digimon_SOURCES = digimon.C
 digihist_SOURCES = digihist.C
 filterbank_speed_SOURCES = filterbank_speed.C
 
-check_PROGRAMS = test_PolnCalibration test_OptimalFFT
+check_PROGRAMS = test_PolnCalibration test_OptimalFFT unittest sample1_gtest
 
 test_PolnCalibration_SOURCES = test_PolnCalibration.C
 test_OptimalFFT_SOURCES = test_OptimalFFT.C
+unittest_SOURCES = unit_test.cc gtest_main.cc
+unittest_LDFLAGS = -lgtest -pthread
+sample1_gtest_SOURCES = sample1_unittest.cc sample1.cc gtest_main.cc
+sample1_gtest_LDFLAGS = -lgtest -pthread
 
 if HAVE_PGPLOT
 

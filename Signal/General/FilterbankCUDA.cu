@@ -7,7 +7,7 @@
  *
  ***************************************************************************/
 
-//#define _DEBUG 1
+//#define _DEBUG 0
 
 #include "dsp/FilterbankCUDA.h"
 #include "CUFFTError.h"
@@ -175,7 +175,8 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 	verbose = dsp::Operation::record_time || dsp::Operation::verbose;
 	const unsigned nPolarizations = in->get_npol();
 	const unsigned nInputChannels = in->get_nchan();
-	const unsigned nOutputChannels = out->get_nchan();
+	//const unsigned nOutputChannels = out->get_nchan();
+	DEBUG("FilterbankEngineCUDA::perform in vs out:, " << in << "," << out);
 	DEBUG("FilterbankEngineCUDA::perform _stream=" << _stream);
 	// GPU scratch space
 	DEBUG("FilterbankEngineCUDA::perform scratch=" << _scratch);
@@ -202,6 +203,7 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					float2* cin = (float2*)inputPtr;
 					EXEC_OR_THROW(cufftExecC2C(_planForward, cin, cscratch, CUFFT_FORWARD))
 				}
+				
 				if(_convolutionKernel) {
 					// complex numbers offset(_convolutionKernel is float2*)
 					unsigned offset = iInputChannel * _nChannelSubbands * _frequencyResolution;
@@ -209,6 +211,7 @@ void FilterbankEngineCUDA::perform(	const dsp::TimeSeries * in, dsp::TimeSeries 
 					k_multiply<<<_multiply.get_nblock(), _multiply.get_nthread(), 0, _stream>>>(cscratch, _convolutionKernel + offset);
 					CHECK_ERROR("FilterbankEngineCUDA::perform _multiply", _stream);
 				}
+				
 				if(_planBackward) {
 					DEBUG("FilterbankEngineCUDA::perform BACKWARD FFT");
 					EXEC_OR_THROW(cufftExecC2C(_planBackward, cscratch, cscratch, CUFFT_INVERSE))

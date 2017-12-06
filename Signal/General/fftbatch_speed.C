@@ -48,7 +48,7 @@ Speed::Speed ()
 {
   gpu_id = 0;
   niter = 16;
-  npt = 1024;
+  npt = 8192;
   cuda = false;
 }
 

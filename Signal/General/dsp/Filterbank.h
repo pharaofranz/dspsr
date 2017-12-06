@@ -63,11 +63,15 @@ namespace dsp {
         //! Engine used to perform discrete convolution step
         class Engine;
         void set_engine(Engine*);
+
+		// unit test example
+		bool isSimulation;
+        virtual void transformation();
 	    
         protected:
         
         //! Perform the convolution transformation on the input TimeSeries
-        virtual void transformation();
+        //virtual void transformation();
         
         //! Number of channels into which the input will be divided
         //! This is the final number of channels in the output
@@ -83,21 +87,29 @@ namespace dsp {
         //double overlap_ratio;
         
         //! Interface to alternate processing engine(e.g. GPU)
-        //Reference::To<Engine> engine;
+        //Reference::To<Engine> engineunsigned tres_ratio;
         
         private:
         
-        void _makePreparations();
-        void _prepareOutput(uint64_t ndat = 0, bool set_ndat = false);
-        void _resizeOutput(bool reserve_extra = false);
+        void _preparationForDataProcessing();
+		unsigned _getTresRatio();
+        void _configOutputStructure(uint64_t ndat, bool set_ndat);
+		void _configWeightedOutput(unsigned tres_ratio);
+		void _prepareOutput(uint64_t ndat = 0, bool set_ndat = false);
+        void _reprepareOutputToMatchInput(bool reserve_extra = false);
         void _computeScaleFactor();
         void _computeSampleCounts();
         void _setupFftPlans();
 		void _runForwardFft();
-        //! Perform the filterbank step 
-		void _initFilterbank();
+        
+		//! Perform the filterbank step 
+		void _setMinimumSamples();
+		void _setupEngine();
+		void _setOutputForFilterbank();
+        void _calculateInStepOutStepForFilterbank();
+		void _initScratchSpaceForFilterbank();
+		void _runFilterbank();
         void _filterbank();
-		void _filterbankCPU();
         
 		//! Interface to alternate processing engine(e.g. GPU)
         Reference::To<Engine> _engine;

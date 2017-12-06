@@ -18,7 +18,7 @@ int main(int argc, char ** argv) try
   unsigned nchan = 1;
 
   int c;
-  while ((c = getopt(argc, argv, "hf:n:t:v")) != -1)
+  while ((c = getopt(argc, argv, "h:f:n:t:v")) != -1)
     switch (c) {
 
     case 'h':

@@ -9,7 +9,7 @@ AC_DEFUN([SWIN_LIB_CUDA],
   AC_ARG_ENABLE([cufft_callbacks],
      AC_HELP_STRING([--enable-cufft-callbacks],[Use CUFFT callbacks if CUDA enabled, EXPERIMENTAL]))
 
-  CUDA_CFLAGS=""
+  CUDA_CFLAGS="-default-strem per-thread"
   CUDA_LIBS=""
 
   if test x"$with_cuda_dir" = xno; then

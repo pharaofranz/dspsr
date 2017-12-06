@@ -216,7 +216,8 @@ if test x"$PSRHOME" = x; then
 						 More/Makefile
 						 More/Plotting/Makefile
 						 More/Applications/Makefile
-						 python/Makefile])
+						 python/Makefile
+						 Unittest/Makefile])
 
 		AC_OUTPUT
 

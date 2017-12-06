@@ -119,7 +119,7 @@ void check_error_stream (const char*, cudaStream_t);
 
 void Speed::runTest ()
 {
-  // dsp::Operation::verbose = true;
+  dsp::Operation::verbose = true;
 
   unsigned nfloat = config.get_nchan() * config.get_freq_res();
   if (!real_to_complex)
@@ -129,7 +129,7 @@ void Speed::runTest ()
 
   if (!nloop)
   {
-    nloop = (1024*1024*256) / size;
+    nloop = (1024) / size;
     if (nloop > 2000)
       nloop = 2000;
   }
@@ -166,6 +166,7 @@ void Speed::runTest ()
 #endif
 
   dsp::Filterbank* filterbank = config.create();
+  filterbank->isSimulation = true;
 
   dsp::TimeSeries input;
   filterbank->set_input( &input );
@@ -189,11 +190,26 @@ void Speed::runTest ()
   RealTimer timer;
   timer.start ();
 
-  for (unsigned i=0; i<nloop; i++)
-    filterbank->operate();
+  uint64_t nInputSize = input.internal_get_size();
+  uint64_t nOutputSize = output.internal_get_size();
+
+  cerr << "nInputSize vs nOutputSize: " << nInputSize << " vs " << nOutputSize 
+  	<< " size : nfloat = " << size << " : " << nfloat << endl; 
+  
+  nInputSize = input.get_ndat();
+  nOutputSize = output.get_ndat();
+
+  cerr << "nInputSize vs nOutputSize: " << nInputSize << " vs " << nOutputSize 
+  	<< " size : nfloat = " << size << " : " << nfloat << endl; 
+
+  filterbank->transformation();
+  //for (unsigned i=0; i<nloop; i++)
+    //filterbank->operate();
+
+
 
 #if HAVE_CUFFT
-  check_error_stream ("CUDA::FilterbankEngine::finish", stream);
+  //check_error_stream ("CUDA::FilterbankEngine::finish", stream);
 #endif
 
   timer.stop ();

@@ -68,7 +68,7 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
 	_nSampleStep = _nFftSamples - _nSampleOverlap;
 	//
 	TESTING_LOG("_frequencyResolution=" << _frequencyResolution << " _nChannelSubbands=" << _nChannelSubbands << " _nPointsToKeep=" << _nPointsToKeep << " _scaleFactor=" << _scaleFactor
-		<< " _nFftSamples=" << _nFftSamples << " _nSampleStep=" << _nSampleStep << std::endl);
+			<< " _nFftSamples=" << _nFftSamples << " _nSampleStep=" << _nSampleStep << std::endl);
 }
 
 /**
@@ -103,9 +103,9 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
 				// apply filter response if available
 				if(_response!=nullptr) {
 					_response->operate(	_complexSpectrum[iPolarization], 
-								iPolarization,
-								iInputChannel*_nChannelSubbands,
-								_nChannelSubbands);
+							iPolarization,
+							iInputChannel*_nChannelSubbands,
+							_nChannelSubbands);
 				}
 				// output data if output is available
 				if(out!=nullptr) {
