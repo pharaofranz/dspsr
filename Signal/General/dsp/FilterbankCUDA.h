@@ -66,6 +66,8 @@ private:
 	CUDA::LaunchConfig1D _multiply;
 	//
 	cudaStream_t _stream;
+
+	dsp::Scratch* _scratchSpace;
 };
 
 #endif

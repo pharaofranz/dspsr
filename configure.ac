@@ -15,7 +15,7 @@ AC_ARG_VAR([CUDA_NVCC_FLAGS], [CUDA nvcc flags (e.g. -arch, etc)])
 
 AC_PREFIX_DEFAULT([${PSRHOME:-"/usr/local"}${PSRHOME:+"/$LOGIN_ARCH"}])
 
-#AX_CXX_COMPILE_STDCXX(11, [noext], [mandatory])
+# AX_CXX_COMPILE_STDCXX(14, [noext], [mandatory])
 
 if test x"$PSRHOME" = x; then
 	AC_MSG_WARN([The PSRHOME environment variable is not set])

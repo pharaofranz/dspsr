@@ -305,7 +305,11 @@ void dsp::LoadToFold::construct () try
     config->filterbank.set_device( device_memory.ptr() );
     config->filterbank.set_stream( gpu_stream );
 
-    // software filterbank constructor
+  	// set use of inverse filterbank algorithm : for stretch goal
+	// set this before calling config->filterbank.create() function
+  	config->filterbank.set_isInverseFilterbank(config->isInverseFilterbank);
+    
+	// software filterbank constructor
     if (!filterbank)
       filterbank = config->filterbank.create();
 

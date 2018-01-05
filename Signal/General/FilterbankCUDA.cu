@@ -10,6 +10,7 @@
 //#define _DEBUG 0
 
 #include "dsp/FilterbankCUDA.h"
+#include "dsp/Scratch.h"
 #include "CUFFTError.h"
 #include "debug.h"
 

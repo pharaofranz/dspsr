@@ -1,10 +1,11 @@
 //-*-C++-*-
 
-#include "dsp/FilterbankCPU.hpp"
+#include "dsp/FilterbankCPU.h"
 
 #include <fstream>
 #include <cassert>
 #include <cstring>
+
 
 #if 0
 #define TESTING_LOG(s) std::cerr << s << std::endl
@@ -14,11 +15,13 @@
 #define TESTING_LOG_LINE
 #endif
 
+using namespace std;
 /**
  * Initialization function to setup FilterbankEngineCPU for use.
  * 
  * @param filterbank pointer to filterbank class that is setting up the engine for usage.
  */
+
 void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
 {
 	TESTING_LOG("FilterbankEngineCPU::setup()");
@@ -28,6 +31,7 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
 	_frequencyResolution = filterbank->get_freq_res();
 	_nChannelSubbands = filterbank->get_nchan_subband();
 	_isRealToComplex = (filterbank->get_input()->get_state() == Signal::Nyquist);
+
 	//! Number of points in forwards FFT
 	_nFftPoints = _nChannelSubbands*_frequencyResolution;
 	//! Number of samples in forwards FFT
@@ -66,9 +70,6 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
 	_scaleFactor = isNormalized ? scaleFactorNormalized : scaleFactorUnnormalized;
 	_nFftSamples = _isRealToComplex ? 2*_nFftPoints : _nFftPoints;
 	_nSampleStep = _nFftSamples - _nSampleOverlap;
-	//
-	TESTING_LOG("_frequencyResolution=" << _frequencyResolution << " _nChannelSubbands=" << _nChannelSubbands << " _nPointsToKeep=" << _nPointsToKeep << " _scaleFactor=" << _scaleFactor
-			<< " _nFftSamples=" << _nFftSamples << " _nSampleStep=" << _nSampleStep << std::endl);
 }
 
 /**
@@ -80,19 +81,20 @@ void FilterbankEngineCPU::setup(dsp::Filterbank* filterbank)
  * @param inStep how far to step forward through the input data for each FFT part
  * @param outStep how far to step forward through the output data for each FFT part
  */
-void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* out,uint64_t nParts, uint64_t inStep, uint64_t outStep)
+void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* out 
+		,uint64_t nParts, uint64_t inStep, uint64_t outStep)
 {
 	TESTING_LOG("FilterbankEngineCPU::perform()");
 	const uint64_t nPolarizations = in->get_npol();
 	const uint64_t nInputChannels = in->get_nchan();
 	const uint64_t nOutputChannels = out->get_nchan();
-	TESTING_LOG("nPolarizations=" << nPolarizations << " nInputChannels=" << nInputChannels << " nParts=" << nParts);
 	for(uint64_t iInputChannel = 0; iInputChannel < nInputChannels; iInputChannel++) {
 		for(uint64_t iPart = 0; iPart < nParts; iPart++) {
 			const uint64_t inOffset = iPart*inStep;
 			const uint64_t outOffset = iPart*outStep;
 			for(uint64_t iPolarization = 0; iPolarization < nPolarizations; iPolarization++) {
-				float* timeDomainInputPtr = const_cast<float*>(in->get_datptr(iInputChannel, iPolarization)) + inOffset;
+				float* timeDomainInputPtr = const_cast<float*>(in->get_datptr(iInputChannel, iPolarization)) 
+					+ inOffset;
 				float* frequencyDomainPtr = _complexSpectrum[iPolarization];
 				// perform forward FFT ot convert time domain data to the frequency domain
 				if(_isRealToComplex==true) {
@@ -100,6 +102,7 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
 				} else {
 					_forward->fcc1d(_nFftSamples, frequencyDomainPtr, timeDomainInputPtr);
 				}
+
 				// apply filter response if available
 				if(_response!=nullptr) {
 					_response->operate(	_complexSpectrum[iPolarization], 
@@ -107,6 +110,7 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
 							iInputChannel*_nChannelSubbands,
 							_nChannelSubbands);
 				}
+
 				// output data if output is available
 				if(out!=nullptr) {
 					for(uint64_t iSubband = 0; iSubband < _nChannelSubbands; iSubband++) {
@@ -115,7 +119,8 @@ void FilterbankEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSeries* ou
 						float* subbandPtr = frequencyDomainPtr + (iSubband*(_frequencyResolution*2));
 						_backward->bcc1d(_frequencyResolution, _complexTime, subbandPtr);
 						// Copy output data to output
-						void* destinationPtr = out->get_datptr((iInputChannel*_nChannelSubbands)+iSubband, iPolarization)+outOffset;
+						void* destinationPtr = out->get_datptr((iInputChannel*_nChannelSubbands)
+								+ iSubband, iPolarization) + outOffset;
 						void* sourcePtr = _complexTime + _nFilterPosition*2;
 						memcpy(destinationPtr, sourcePtr, _nPointsToKeep*sizeof(float)*2);
 					}
@@ -137,14 +142,16 @@ void FilterbankEngineCPU::finish()
  */
 void FilterbankEngineCPU::set_scratch(float* scratchPtr)
 {
+
 	TESTING_LOG("FilterbankEngineCPU::set_scratch(" << scratch << ")");
 	unsigned bigFftSize = _nChannelSubbands * _frequencyResolution * 2;
 	if(_isRealToComplex) {
 		bigFftSize += 256;
-	}
+	}   
 	scratch = scratchPtr;
 	_complexSpectrum[0] = scratch;
 	_complexSpectrum[1] = _complexSpectrum[0];
 	_complexTime = _complexSpectrum[1] + bigFftSize;
 	_windowedTimeDomain = _complexTime + 2 * _frequencyResolution;
+
 }

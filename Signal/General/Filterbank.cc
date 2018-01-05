@@ -20,7 +20,6 @@
 #include <fstream>
 
 using namespace std;
-
 // #define _DEBUG 1
 
 #if 0 
@@ -44,6 +43,8 @@ dsp::Filterbank::Filterbank(const char* name, Behaviour behaviour)
 	//verbose = true;
 	isSimulation = false;
 	set_buffering_policy(new InputBuffering(this));
+
+	cerrStream << isVerbose << "Init Filerbank" << endl;
 }
 
 void dsp::Filterbank::set_engine(Engine* engine)
@@ -55,7 +56,7 @@ void dsp::Filterbank::set_engine(Engine* engine)
 /**
  * Initializer function to prepare Filterbank for use.
  */
-inline void dsp::Filterbank::prepare()
+void dsp::Filterbank::prepare()
 {
 	if(prepared == false) {
 		cerrStream << isVerbose << "dsp::Filterbank::prepare" << endl;
@@ -64,14 +65,14 @@ inline void dsp::Filterbank::prepare()
 	}
 }
 
-inline void dsp::Filterbank::_setMinimumSamples()
+void dsp::Filterbank::_setMinimumSamples()
 {
 	if(has_buffering_policy()==true) {
 		get_buffering_policy()->set_minimum_samples(nsamp_fft);
 	}
 }
 
-inline void dsp::Filterbank::_setupEngine()
+void dsp::Filterbank::_setupEngine()
 {
 	if(_engine!=nullptr) {
 		_engine->setup(this);
@@ -83,7 +84,7 @@ inline void dsp::Filterbank::_setupEngine()
  * These are preparations that could be performed once at the start of
  * the data processing
  */
-inline void dsp::Filterbank::_preparationForDataProcessing()
+void dsp::Filterbank::_preparationForDataProcessing()
 {
 	TESTING_LOG("_preparationforDataProcessing - start");
 	_computeSampleCounts();
@@ -99,7 +100,7 @@ inline void dsp::Filterbank::_preparationForDataProcessing()
 	TESTING_LOG("_preparationforDataProcessing - end");
 }
 
-inline unsigned dsp::Filterbank::_getTresRatio()
+unsigned dsp::Filterbank::_getTresRatio()
 {
 	return nsamp_fft / freq_res;
 }
@@ -141,7 +142,7 @@ void dsp::Filterbank::_configOutputStructure(uint64_t ndat, bool set_ndat)
 		<< output->get_ndat() << "scale= " << output->get_scale() << endl;
 }
 
-inline void dsp::Filterbank::_configWeightedOutput(unsigned tres_ratio)
+void dsp::Filterbank::_configWeightedOutput(unsigned tres_ratio)
 {
 
 	/* the problem: copy_configuration copies the weights array, which
@@ -158,13 +159,13 @@ inline void dsp::Filterbank::_configWeightedOutput(unsigned tres_ratio)
 		weighted_output->set_reserve_kludge_factor(1);
 		weighted_output->convolve_weights(nsamp_fft, nsamp_step);
 		weighted_output->scrunch_weights(tres_ratio);
-	}
+     	}
 }
 
 /**
  * Prepares output data structures and values for output of processed timeseries data.
  */
-inline void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
+void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 {
 	TESTING_LOG("_prepareOutput - start");
 
@@ -209,7 +210,7 @@ inline void dsp::Filterbank::_prepareOutput(uint64_t ndat, bool set_ndat)
 	TESTING_LOG("_prepareOutput - end");
 }
 
-inline void dsp::Filterbank::reserve()
+void dsp::Filterbank::reserve()
 {
 	cerrStream << isVerbose << "dsp::Filterbank::reserve" << endl;
 	_reprepareOutputToMatchInput(true);
@@ -218,7 +219,7 @@ inline void dsp::Filterbank::reserve()
 /**
  * Re-prepares output after adjusting output size to match input size.
  */
-inline void dsp::Filterbank::_reprepareOutputToMatchInput(bool reserve_extra)
+void dsp::Filterbank::_reprepareOutputToMatchInput(bool reserve_extra)
 {
 	const uint64_t ndat = input->get_ndat();
 	// number of big FFTs(not including, but still considering, extra FFTs
@@ -232,10 +233,12 @@ inline void dsp::Filterbank::_reprepareOutputToMatchInput(bool reserve_extra)
 	if(ndat > nsamp_overlap) {
 		npart =(ndat-nsamp_overlap)/nsamp_step;
 	}
+	
 	// on some iterations, ndat could be large enough to fit an extra part
 	if(reserve_extra && has_buffering_policy()) {
 		npart += 2;
 	}
+	
 	// points kept from each small fft
 	_nChannelsSmallFft = freq_res - nfilt_tot;
 	//
@@ -280,6 +283,7 @@ inline void dsp::Filterbank::_computeSampleCounts()
 	_nInputChannels = input->get_nchan();
 	//! Number of channels outputted per input channel
 	nchan_subband = nchan / _nInputChannels;
+
 	//
 	nfilt_pos = 0;
 	nfilt_neg = 0;
@@ -305,7 +309,8 @@ inline void dsp::Filterbank::_computeSampleCounts()
 	nsamp_fft = fftPointsPerSample * n_fft;
 	nsamp_overlap = fftPointsPerSample * nfilt_tot * nchan_subband;
 	//! number of timesamples between start of each big fft
-	nsamp_step = nsamp_fft - nsamp_overlap;
+	nsamp_step = nsamp_fft - nsamp_overlap; 
+
 	TESTING_LOG("computeSampleCounts - end");
 }
 
@@ -335,7 +340,7 @@ inline void dsp::Filterbank::_setupFftPlans()
 	TESTING_LOG("setupFftPlans - end");
 }
 
-inline void dsp::Filterbank::_setOutputForFilterbank()
+void dsp::Filterbank::_setOutputForFilterbank()
 {
 	if(has_buffering_policy()==true) {
 		get_buffering_policy()->set_next_start(nsamp_step * npart);
@@ -377,7 +382,7 @@ void dsp::Filterbank::transformation()
 	_filterbank();
 }
 
-inline void dsp::Filterbank::_calculateInStepOutStepForFilterbank()
+void dsp::Filterbank::_calculateInStepOutStepForFilterbank()
 {
 	// number of floats to step between input to filterbank
 	in_step = nsamp_step * input->get_ndim();
@@ -386,21 +391,30 @@ inline void dsp::Filterbank::_calculateInStepOutStepForFilterbank()
 	out_step = (freq_res - nfilt_tot) * 2;
 }
 
-inline void dsp::Filterbank::_initScratchSpaceForFilterbank()
+void dsp::Filterbank::_initScratchSpaceForFilterbank()
 {
-	// initialize scratch space for FFTs
-	_bigFftSize = nchan_subband * freq_res * 2;
+	if(_isInverseFilterbank == false) {
+		// initialize scratch space for FFTs
+		_bigFftSize = nchan_subband * freq_res * 2;
+	}
+	else {
+		// for stretch goal - inverse Filterbank
+		_bigFftSize = _nInputChannels * freq_res * 2 * sizeof(float) * input->get_npol();
+	}	
+	
 	if(input->get_state() == Signal::Nyquist) {
 		_bigFftSize += 256;
 	}
 	// also need space to hold backward FFTs
 	unsigned scratch_needed = _bigFftSize + 2 * freq_res;
+
 	// divide up the scratch space
 	_complexSpectrum[0] = scratch->space<float>(scratch_needed);
 	_complexSpectrum[1] = _complexSpectrum[0];	
+	
 }
 
-inline void dsp::Filterbank::_runFilterbank()
+void dsp::Filterbank::_runFilterbank()
 {
 	// PERFORM FILTERBANK VIA ENGINE(could be on GPU with CUDA or on CPU)
 	if(_engine!=nullptr) {
@@ -415,7 +429,7 @@ inline void dsp::Filterbank::_runFilterbank()
 	}
 }
   
-inline void dsp::Filterbank::_filterbank()
+void dsp::Filterbank::_filterbank()
 {
 	_calculateInStepOutStepForFilterbank();
 	_initScratchSpaceForFilterbank();

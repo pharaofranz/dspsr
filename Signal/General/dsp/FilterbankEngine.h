@@ -10,6 +10,7 @@
 #define __FilterbankEngine_h
 
 #include "dsp/Filterbank.h"
+#include "dsp/Scratch.h"
 //#include "dsp/filterbank_engine.h"
 
 class dsp::Filterbank::Engine : public Reference::Able
@@ -22,6 +23,7 @@ public:
   virtual void setup (Filterbank*) = 0;
 
   //! provide some scratch space for the engine
+  //virtual void set_scratch (float *) = 0;
   virtual void set_scratch (float *) = 0;
 
   //! Perform the filterbank operation on the input data
@@ -34,6 +36,14 @@ public:
   //! Finish up
   virtual void finish () { }
 
+/*
+  //! Common routine to set scratch space
+  void init_scratch(unsigned memorySizeNeeded, dsp::Scratch* scratchSpace)
+  {
+		
+  }
+
+*/
 protected:
 
   float* scratch;

@@ -12,10 +12,10 @@
 #define __Filterbank_h
 
 #include "dsp/Convolution.h"
-#include <iostream>
+#include <fstream>
 
 namespace dsp {
-    
+
     //! Breaks a single-band TimeSeries into multiple frequency channels
     /* This class implements the coherent filterbank technique described
        in Willem van Straten's thesis.  */
@@ -51,8 +51,19 @@ namespace dsp {
         unsigned get_nchan() const noexcept { return nchan; }
         
         unsigned get_nchan_subband() const noexcept {return nchan_subband; }
+   
+   		void set_isInverseFilterbank(const bool isInverseFilterbank) noexcept { 
+            _isInverseFilterbank = isInverseFilterbank;
+	    }
+
+	
+        //! Get the number of input channels
+        unsigned get_nInputChannel() const noexcept { return input->get_nchan(); }
         
-        //! Set the frequency resolution factor
+        //! Get the number of channels into which the input will be divided
+        unsigned get_nPolarization() const noexcept { return input->get_npol(); }
+		
+		//! Set the frequency resolution factor
         void set_freq_res(unsigned _freq_res) noexcept { freq_res = _freq_res; }
         void set_frequency_resolution(unsigned fres) noexcept { freq_res = fres; }
         
@@ -63,12 +74,13 @@ namespace dsp {
         //! Engine used to perform discrete convolution step
         class Engine;
         void set_engine(Engine*);
-
+        
+		virtual void transformation();
+	    
 		// unit test example
 		bool isSimulation;
-        virtual void transformation();
-	    
-        protected:
+       
+	   	protected:
         
         //! Perform the convolution transformation on the input TimeSeries
         //virtual void transformation();
@@ -122,8 +134,9 @@ namespace dsp {
 		unsigned _nChannelsSmallFft;
 		unsigned _nInputChannels;
 		unsigned _bigFftSize;
+		bool _isInverseFilterbank;
     };
-    
+
 }
 
 #endif

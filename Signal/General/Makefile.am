@@ -22,7 +22,7 @@ nobase_include_HEADERS = dsp/ACFilterbank.h dsp/Detection.h	       \
 	dsp/Resize.h dsp/SKDetector.h dsp/SKMasker.h		       \
 	dsp/Pipeline.h dsp/SingleThread.h dsp/MultiThread.h            \
 	dsp/PolnSelect.h dsp/PolnReshape.h dsp/SpectralKurtosis.h \
-  dsp/SKComputer.h dsp/FilterbankCPU.h
+  dsp/SKComputer.h dsp/FilterbankCPU.h dsp/FilterbankInverseCPU.h
 
 libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
 	cross_detect.ic stokes_detect.c stokes_detect.h		     \
@@ -39,9 +39,10 @@ libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
 	TFPFilterbank.C RFIZapper.C SKFilterbank.C \
 	Resize.C SKDetector.C SKMasker.C \
 	SingleThread.C MultiThread.C dsp_verbosity.C \
-	PolnSelect.C PolnReshape.C SpectralKurtosis.C FilterbankCPU.cc
+	PolnSelect.C PolnReshape.C SpectralKurtosis.C FilterbankCPU.cc \
+	FilterbankInverseCPU.cc
 
-bin_PROGRAMS = dmsmear digitxt digimon digihist filterbank_speed
+bin_PROGRAMS = dmsmear digitxt digimon digihist filterbank_speed 
 
 if HAVE_CUFFT
 
@@ -92,14 +93,14 @@ digimon_SOURCES = digimon.C
 digihist_SOURCES = digihist.C
 filterbank_speed_SOURCES = filterbank_speed.C
 
-check_PROGRAMS = test_PolnCalibration test_OptimalFFT unittest sample1_gtest
+check_PROGRAMS = test_PolnCalibration test_OptimalFFT 
 
 test_PolnCalibration_SOURCES = test_PolnCalibration.C
 test_OptimalFFT_SOURCES = test_OptimalFFT.C
-unittest_SOURCES = unit_test.cc gtest_main.cc
-unittest_LDFLAGS = -lgtest -pthread
-sample1_gtest_SOURCES = sample1_unittest.cc sample1.cc gtest_main.cc
-sample1_gtest_LDFLAGS = -lgtest -pthread
+
+bin_PROGRAMS += filterbank_unittest
+filterbank_unittest_SOURCES = unit_test.cc gtest_main.cc
+filterbank_unittest_LDFLAGS = -lgtest -pthread
 
 if HAVE_PGPLOT
 

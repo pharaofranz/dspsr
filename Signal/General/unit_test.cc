@@ -45,7 +45,11 @@
 
 #include <limits.h>
 
-#include "dsp/FilterbankCPU.hpp"
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include "dsp/FilterbankCPU.h"
 #include "dsp/Filterbank.h"
 #include "dsp/FilterbankConfig.h"
 #include "dsp/Memory.h"
@@ -61,82 +65,245 @@ using namespace std;
 
 namespace {
 
-ostream cerrStream(NULL);
+	ostream cerrStream(NULL);
 
-ostream& isVerbose(ostream &stream)
-{
-    return (dsp::Filterbank::verbose) ? cerr : stream;
-}
+	ostream& isVerbose(ostream &stream)
+	{
+		return (dsp::Filterbank::verbose) ? cerr : stream;
+	}
 
-TEST(FilterbankSetGetChan, Positive) {
+	TEST(FilterbankSetGetChan, Positive) {
 
-	dsp::Operation::verbose = false;
-	dsp::Filterbank::Config filterbankConfig;
-	dsp::Filterbank* filterbank = filterbankConfig.create();
+		dsp::Operation::verbose = false;
+		dsp::Filterbank::Config filterbankConfig;
+		dsp::Filterbank* filterbank = filterbankConfig.create();
 
-	// given
-	unsigned nchan = 128;
-	
-	// when
-	filterbank->set_nchan(nchan);
+		// given
+		unsigned nchan = 128;
 
-	// then
-	// ASSERT_* : Fatal Assertion
-	ASSERT_EQ(filterbank->get_nchan(), nchan);
-	cerrStream << isVerbose << filterbank->get_nchan() << std::endl;
-}
+		// when
+		filterbank->set_nchan(nchan);
 
-TEST(FilterbankSetGetChan, Negative) {
+		// then
+		// ASSERT_* : Fatal Assertion
+		ASSERT_EQ(filterbank->get_nchan(), nchan);
+		cerrStream << isVerbose << filterbank->get_nchan() << std::endl;
+	}
 
-	dsp::Operation::verbose = false;
-	dsp::Filterbank::Config filterbankConfig;
-	dsp::Filterbank* filterbank = filterbankConfig.create();
-	
-	// given
-	unsigned nchan = -128;
-	
-	// when
-	filterbank->set_nchan(nchan);
-	
-	// then
-	ASSERT_EQ(filterbank->get_nchan(), nchan);
-	cerrStream << isVerbose << nchan << " vs "<< filterbank->get_nchan() << std::endl;
-}
+	TEST(FilterbankSetGetChan, Negative) {
 
-TEST(FilterbankSetGetFrequencyResolution, Positive) {
+		dsp::Operation::verbose = false;
+		dsp::Filterbank::Config filterbankConfig;
+		dsp::Filterbank* filterbank = filterbankConfig.create();
 
-	dsp::Operation::verbose = false;
-	dsp::Filterbank::Config filterbankConfig;
-	dsp::Filterbank* filterbank = filterbankConfig.create();
+		// given
+		unsigned nchan = -128;
 
-	// given
-	unsigned frequencyResolution = 1024;
-	
-	// when
-	filterbank->set_freq_res(frequencyResolution);
+		// when
+		filterbank->set_nchan(nchan);
 
-	// then
-	// ASSERT_* : Fatal Assertion
-	ASSERT_EQ(filterbank->get_freq_res(), frequencyResolution);
-	cerrStream << isVerbose << frequencyResolution << " vs "<< filterbank->get_freq_res() << std::endl;
-}
+		// then
+		ASSERT_EQ(filterbank->get_nchan(), nchan);
+		cerrStream << isVerbose << nchan << " vs "<< filterbank->get_nchan() << std::endl;
+	}
 
-TEST(FilterbankSetGetFrequencyResolution, Negative) {
+	TEST(FilterbankSetGetFrequencyResolution, Positive) {
 
-	dsp::Operation::verbose = false;
-	dsp::Filterbank::Config filterbankConfig;
-	dsp::Filterbank filterbank; // = filterbankConfig.create();
+		dsp::Operation::verbose = false;
+		dsp::Filterbank::Config filterbankConfig;
+		dsp::Filterbank* filterbank = filterbankConfig.create();
 
-	// give
-	unsigned frequencyResolution = -1024;
-	
-	// when
-	filterbank.set_freq_res(frequencyResolution);
-	
-	// then
-	ASSERT_EQ(filterbank.get_freq_res(), frequencyResolution);
-	cerrStream << isVerbose << frequencyResolution << " vs "<< filterbank.get_freq_res() << std::endl;
-}
+		// given
+		unsigned frequencyResolution = 1024;
+
+		// when
+		filterbank->set_freq_res(frequencyResolution);
+
+		// then
+		// ASSERT_* : Fatal Assertion
+		ASSERT_EQ(filterbank->get_freq_res(), frequencyResolution);
+		cerrStream << isVerbose << frequencyResolution << " vs "<< filterbank->get_freq_res() << std::endl;
+	}
+
+	TEST(FilterbankSetGetFrequencyResolution, Negative) {
+
+		dsp::Operation::verbose = false;
+		dsp::Filterbank::Config filterbankConfig;
+		dsp::Filterbank filterbank; // = filterbankConfig.create();
+
+		// given
+		unsigned frequencyResolution = -1024;
+
+		// when
+		filterbank.set_freq_res(frequencyResolution);
+
+		// then
+		ASSERT_EQ(filterbank.get_freq_res(), frequencyResolution);
+		cerrStream << isVerbose << frequencyResolution << " vs "<< filterbank.get_freq_res() << std::endl;
+	}
+
+	TEST(FilterbankTransformation, WholeProcessing) {
+
+		dsp::Operation::verbose = true;
+
+
+		dsp::Filterbank::Config config;
+		unsigned nloop;
+		unsigned niter;
+		unsigned gpu_id;
+		bool real_to_complex;
+		bool do_fwd_fft;
+		bool cuda;
+
+		// given
+
+		gpu_id = 0;
+		niter = 10;
+		nloop = 0;
+		real_to_complex = false;
+		do_fwd_fft = true;
+		cuda = false;
+
+		config.set_freq_res( 1024 );
+
+		unsigned nfloat = config.get_nchan() * config.get_freq_res();
+		if (!real_to_complex)
+			nfloat *= 2;
+
+		unsigned size = sizeof(float) * nfloat;
+
+		if (!nloop)
+		{
+			nloop = (1024) / size;
+			if (nloop > 2000)
+				nloop = 2000;
+		}
+
+		dsp::Memory* memory = 0;
+
+#if HAVE_CUFFT
+		cerr << "using GPU " << gpu_id << endl;
+		cudaSetDevice(gpu_id); 
+
+		cudaStream_t stream = 0;
+		if (cuda)
+		{
+			cudaError_t err = cudaSetDevice (0);
+			if (err != cudaSuccess)
+				throw Error (InvalidState, "filterbank_speed",
+						"cudaSetDevice failed: %s", cudaGetErrorString(err));
+
+			err = cudaStreamCreate( &stream );
+			if (err != cudaSuccess)
+				throw Error (InvalidState, "filterbank_speed",
+						"cudaStreamCreate failed: %s", cudaGetErrorString(err));
+
+			memory = new CUDA::DeviceMemory(stream);
+
+			cerr << "run on GPU" << endl;
+			config.set_device( memory );
+			config.set_stream( stream );
+		}
+		else
+			memory = new dsp::Memory;
+#else
+		memory = new dsp::Memory;
+#endif
+
+		dsp::Filterbank* filterbank = config.create();
+		filterbank->isSimulation = true;
+
+		dsp::TimeSeries input;
+		filterbank->set_input( &input );
+
+		input.set_rate( 1e6 );
+		input.set_state( Signal::Analytic );
+		input.set_ndim( 2 );
+		input.set_input_sample( 0 );
+		input.set_memory ( memory );
+
+		input.resize( size );
+		input.zero();
+
+		dsp::TimeSeries output;
+		output.set_memory ( memory );
+
+		filterbank->set_output( &output );
+
+		filterbank->prepare();
+
+		RealTimer timer;
+		timer.start ();
+
+		uint64_t nInputSize = input.internal_get_size();
+		uint64_t nOutputSize = output.internal_get_size();
+
+		cerr << "nInputSize vs nOutputSize: " << nInputSize << " vs " << nOutputSize 
+			<< " size : nfloat = " << size << " : " << nfloat << endl; 
+
+		nInputSize = input.get_ndat();
+		nOutputSize = output.get_ndat();
+
+		cerr << "nInputSize vs nOutputSize: " << nInputSize << " vs " << nOutputSize 
+			<< " size : nfloat = " << size << " : " << nfloat << endl; 
+
+		float* pInput = const_cast<float*>(input.get_datptr());
+		
+		for(auto i=0; i<nInputSize/4; i++)
+		{
+			*(pInput+i) = i;
+			cerr<< *(pInput+i) << " "; 
+		}
+
+		cerr<< endl;
+
+		filterbank->transformation();
+  		//for (unsigned i=0; i<nloop; i++)
+      	//	filterbank->operate();
+		float* pOutput = const_cast<float*>(output.get_datptr());
+		
+		for(auto i=0; i<nOutputSize/4; i++)
+		{
+			cerr<< *(pOutput+i) << " "; 
+		}
+
+		cerr<< endl;
+
+
+#if HAVE_CUFFT
+		//check_error_stream ("CUDA::FilterbankEngine::finish", stream);
+#endif
+
+		timer.stop ();
+
+		double total_time = timer.get_elapsed();
+
+		double time_us = total_time * 1e6 / (nloop*niter);
+
+		unsigned nfft = config.get_freq_res();
+		unsigned nchan = config.get_nchan();
+
+		double log2_nfft = log2(nfft);
+		double log2_nchan = log2(nchan);
+
+		double bwd = 2;
+		if (nchan == 1)
+			bwd = 1;
+
+		double mflops = 5.0 * nfft * nchan * (bwd*log2_nfft + log2_nchan) / time_us;
+
+		cerr << "nchan=" << nchan << " nfft=" << nfft << " time=" << time_us << "us"
+			" log2(nfft)=" << log2_nfft << " log2(nchan)=" << log2_nchan << 
+			" mflops=" << mflops << endl;
+
+		cout << nchan << " " << nfft << " " << time_us << " "
+			<< log2_nchan << " " << log2_nfft << " " << mflops << endl;
+
+
+		// when
+
+		// then
+	}
 
 }  // namespace
 

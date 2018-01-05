@@ -1,21 +1,20 @@
 //-*-C++-*-
-
 #pragma once
 
-#ifndef __FilterbankCPU_hpp
-#define __FilterbankCPU_hpp
+#ifndef __FilterbankInverseCPU_hpp
+#define __FilterbankInverseCPU_hpp
 
 #include "dsp/FilterbankEngine.h"
+#include "dsp/Scratch.h"
 //
 #include "dsp/Transformation.h"
-#include "dsp/Scratch.h"
 //#include "dsp/LaunchConfig.h"
 
-class FilterbankEngineCPU : public dsp::Filterbank::Engine
+class FilterbankInverseEngineCPU : public dsp::Filterbank::Engine
 {
 	public:
-		FilterbankEngineCPU() {};
-		~FilterbankEngineCPU() {};
+		FilterbankInverseEngineCPU() {};
+		~FilterbankInverseEngineCPU() {};
 
 		void setup(dsp::Filterbank* filterbank);
 		void setup_primary(dsp::Filterbank* filterbank);
@@ -39,7 +38,9 @@ class FilterbankEngineCPU : public dsp::Filterbank::Engine
 		unsigned _nFftSamples;
 		unsigned _nSampleOverlap;
 		unsigned _nSampleStep;
-		unsigned _nFilterPosition;
+	 	unsigned _nFilterPosition;
+		unsigned _nInputChannels;
+		unsigned _nPolarization;
 		//
 		FTransform::Plan* _forward;
 		FTransform::Plan* _backward;
@@ -50,7 +51,6 @@ class FilterbankEngineCPU : public dsp::Filterbank::Engine
 		float* _complexTime;
 		float* _windowedTimeDomain;
 		dsp::Scratch* _scratchSpace;
-
 };
 
 #endif

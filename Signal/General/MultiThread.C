@@ -44,6 +44,7 @@ void dsp::MultiThread::set_nthread (unsigned nthread)
     if (!threads[i])
       threads[i] = new_thread();
 
+
   if (configuration)
     set_configuration (configuration);
 
@@ -175,15 +176,20 @@ void* dsp::MultiThread::thread (void* context) try
   // Construct
 
   wait (thread, SingleThread::Construct);
+  
   thread->construct ();
+  
   signal (thread, SingleThread::Constructed);
 
   // Prepare
 
   wait (thread, SingleThread::Prepare);
+  
   if (thread->colleague)
     thread->share (thread->colleague);
+  
   thread->prepare ();
+  
   signal (thread, SingleThread::Prepared);
 
   // Run

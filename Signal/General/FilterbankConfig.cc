@@ -16,10 +16,10 @@
 #include "dsp/FilterbankCUDA.h"
 #include "dsp/MemoryCUDA.h"
 #endif
-#include "dsp/FilterbankCPU.hpp"
+#include "dsp/FilterbankCPU.h"
+#include "dsp/FilterbankInverseCPU.h"
 
 #include <iostream>
-using namespace std;
 
 using dsp::Filterbank;
 
@@ -88,6 +88,9 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
 
   if (_frequencyResolution)
     filterbank->set_frequency_resolution ( _frequencyResolution );
+	
+  // for stretach goal
+  filterbank->set_isInverseFilterbank(_isInverseFilterbank);
 
 #if HAVE_CUDA
 
@@ -103,10 +106,18 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
     gpu_scratch->set_memory (device_memory);
     filterbank->set_scratch (gpu_scratch);
   } else {	
-	filterbank->set_engine(new FilterbankEngineCPU());
+	if(_isInverseFilterbank){
+		filterbank->set_engine(new FilterbankInverseEngineCPU());
+	}
+	else
+		filterbank->set_engine(new FilterbankEngineCPU());
   }
 #else
-	filterbank->set_engine(new FilterbankEngineCPU());
+	if(_isInverseFilterbank){
+		filterbank->set_engine(new FilterbankInverseEngineCPU());
+	}
+	else
+		filterbank->set_engine(new FilterbankEngineCPU());
 #endif
 
   return filterbank.release();

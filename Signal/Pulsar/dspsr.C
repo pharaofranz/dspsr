@@ -355,6 +355,10 @@ void parse_options (int argc, char** argv) try
   arg = menu.add (dm, 'D', "dm");
   arg->set_help ("over-ride dispersion measure");
 
+  // stretch goal
+  arg = menu.add (config->isInverseFilterbank, "IF");
+  arg->set_help ("set use of Inverse Filterbank option(default:false)");
+  
   arg = menu.add (config->interchan_dedispersion, 'K');
   arg->set_help ("remove inter-channel dispersion delays");
 

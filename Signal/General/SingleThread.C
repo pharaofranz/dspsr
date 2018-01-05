@@ -188,7 +188,6 @@ unsigned count (const std::vector<T>& data, T element)
 void dsp::SingleThread::construct () try
 {
   TimeSeries::auto_delete = false;
-
   operations.resize (0);
 
   // each timeseries created will be counted in new_time_series

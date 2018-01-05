@@ -142,6 +142,9 @@ namespace dsp {
     // Filterbank configuration options
     Filterbank::Config filterbank;
 
+	// stretch goal
+	bool isInverseFilterbank;
+
     bool force_sensible_nbin;
 
     // length of sub-integrations in pulse periods

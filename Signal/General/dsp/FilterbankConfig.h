@@ -30,10 +30,15 @@ namespace dsp
 
     Config ()
     : _memory(0), _stream(0), _nChannel(1), 
-      _frequencyResolution(0), _when(After) { }
+      _frequencyResolution(0), _when(After), _isInverseFilterbank(false){ }
 
     void set_nchan (unsigned n) noexcept { _nChannel = n; }
     unsigned get_nchan () const noexcept { return _nChannel; }
+	
+	// for stretch goal : set for inverse filterbank engine
+	void set_isInverseFilterbank(const bool isInverseFilterbank) noexcept { 
+		_isInverseFilterbank = isInverseFilterbank;
+	}
 
     void set_freq_res (unsigned n) noexcept { _frequencyResolution = n; }
     unsigned get_freq_res () const noexcept { return _frequencyResolution; }
@@ -57,6 +62,7 @@ namespace dsp
     unsigned _nChannel;
     unsigned _frequencyResolution;
     When _when;
+	bool _isInverseFilterbank;
 
   };
 
@@ -65,6 +71,7 @@ namespace dsp
 
   //! Extraction operator
   std::istream& operator >> (std::istream&, Filterbank::Config&);
+
 }
 
 #endif
