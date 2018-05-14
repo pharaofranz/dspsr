@@ -255,7 +255,7 @@ void dsp::ASCIIObservation::load (const char* header)
   */
 
   uint64_t scan_ndat = 0;
-  if (ascii_header_check (header, "NDAT", "%"PRIu64, &scan_ndat) >= 0)
+  if (ascii_header_check (header, "NDAT", "%" PRIu64, &scan_ndat) >= 0)
     set_ndat( scan_ndat );
   else
     set_ndat( 0 );

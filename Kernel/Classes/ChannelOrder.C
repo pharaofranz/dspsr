@@ -23,7 +23,7 @@ dsp::ChannelOrder::~ChannelOrder(){ }
 
 void dsp::ChannelOrder::transformation(){
   if( verbose )
-    fprintf(stderr,"In dsp::ChannelOrder::transformation() with input->ndat="UI64"\n",
+    fprintf(stderr,"In dsp::ChannelOrder::transformation() with input->ndat=" UI64 "\n",
 	    input->get_ndat());
 
   if(input->get_nbit()!=32)
@@ -83,7 +83,7 @@ void dsp::ChannelOrder::transformation(){
   }
 
   if( verbose )
-    fprintf(stderr,"Exiting from dsp::ChannelOrder::transformation() with output->ndat="UI64"\n",
+    fprintf(stderr,"Exiting from dsp::ChannelOrder::transformation() with output->ndat=" UI64 "\n",
 	    output->get_ndat());
 }
 

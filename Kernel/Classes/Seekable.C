@@ -88,8 +88,8 @@ void dsp::Seekable::load_data (BitSeries* data)
 
     if (read_sample > get_info()->get_ndat())
       throw Error (InvalidState, "dsp::Seekable::load_data",
-                   "read_sample="UI64" > ndat="UI64 "\n\t"
-                   "recycled="UI64" load_sample="UI64,
+                   "read_sample=" UI64 " > ndat=" UI64 "\n\t"
+                   "recycled=" UI64 " load_sample=" UI64,
                    read_sample, get_info()->get_ndat(),
                    recycled, get_load_sample());
 
@@ -133,7 +133,7 @@ void dsp::Seekable::load_data (BitSeries* data)
     // confirm that we be where we expect we be
     if (read_sample != (uint64_t) data->get_nsamples (seeked))
       throw Error (InvalidState, "dsp::Seekable::load_data", "seek mismatch"
-                   " read_sample="UI64" absolute_sample="UI64,
+                   " read_sample=" UI64 " absolute_sample=" UI64,
                    read_sample, data->get_nsamples (seeked));
 
     current_sample = read_sample;
@@ -178,7 +178,7 @@ void dsp::Seekable::load_data (BitSeries* data)
 
   if (bytes_read < 0)
     throw Error (FailedCall, "dsp::Seekable::load_data",
-                 "load_bytes ("UI64") block_size=", toread_bytes,
+                 "load_bytes (" UI64 ") block_size=", toread_bytes,
                  get_block_size());
 
   if ((uint64_t)bytes_read < toread_bytes)

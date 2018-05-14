@@ -120,7 +120,7 @@ void dsp::InputBuffering::Share::pre_transformation () try
     if (buffer->get_next_contiguous() > want)
       throw Error (InvalidState, 
                    "dsp::InputBuffering::Share::pre_transformation",
-                   "have=%"PRIu64" > want=%"PRIu64,
+                   "have=%" PRIu64" > want=%" PRIu64,
                    buffer->get_next_contiguous(), want);
 
     if (Operation::verbose)
