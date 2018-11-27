@@ -29,12 +29,17 @@ public:
   bool operator != (int num) const;
   
   double doubleValue( ) const;
-  
+
+  /* divides argument by self and throws an exception if the
+   result is not an integer */
+  int normalize (int) const ;
+
 private:
   int numerator;
   int denominator;
   void reduce( );
   
 };
+
 
 #endif // !defined(__Rational_h)

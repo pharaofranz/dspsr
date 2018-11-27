@@ -30,8 +30,36 @@ int main ()
       cerr << "test_Rational operator != failed" << endl;
       return -1;
     }
-  
-  cerr << "test_Rational test passed" << endl;
+
+  string s2 = "8/7";
+  Rational r2 = fromstring<Rational>(s2);
+
+  try {
+    int result = r2.normalize (4);
+    cerr << "test_Rational integer normalize failed to throw exception" << endl;
+    return -1;
+  }
+  catch (std::exception& error)
+    {
+      cerr << "expected exception caught" << endl;
+    }
+
+  try {
+    int result = r2.normalize (8);
+
+    if (result != 7)
+    {
+      cerr << "integer normalize does not return expected result" << endl;
+      return -1;
+    }
+  }
+  catch (std::exception& error)
+    {
+      cerr << "unexpected exception caught" << endl;
+      return -1;
+    }
+    
+  cerr << "test_Rational all tests passed" << endl;
 
   return 0;
 }
