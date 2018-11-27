@@ -22,6 +22,15 @@ int main ()
     return -1;
   }
 
+  if (r1 != 1)
+    {
+    }
+  else
+    {
+      cerr << "test_Rational operator != failed" << endl;
+      return -1;
+    }
+  
   cerr << "test_Rational test passed" << endl;
 
   return 0;

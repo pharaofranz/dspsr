@@ -30,6 +30,40 @@ Rational::Rational (int num, int den)
   denominator = den;
 }
 
+const Rational& Rational::operator = (const Rational& r)
+{
+  numerator = r.numerator;
+  denominator = r.denominator;
+  return *this;
+}
+
+bool Rational::operator == (const Rational& r) const
+{
+  return numerator == r.numerator && denominator == r.denominator;
+}
+
+bool Rational::operator != (const Rational& r) const
+{
+  return numerator != r.numerator || denominator != r.denominator;
+}
+
+const Rational& Rational::operator = (int num)
+{
+  numerator = num;
+  denominator = 1;
+  return *this;
+}
+
+bool Rational::operator == (int num) const
+{
+  return denominator == 1 && numerator == num;
+}
+
+bool Rational::operator != (int num) const
+{
+  return denominator != 1 || numerator != num;
+}
+
 double Rational::doubleValue( ) const
 {
   return double(numerator) / double(denominator);
