@@ -412,6 +412,15 @@ void dsp::ASCIIObservation::load (const char* header)
   // save the header to the local buffer
   //
   loaded_header = string (header);
+  
+  // //////////////////////////////////////////////////////////////////////
+  //
+  // OS_FACTOR
+  //
+  if (ascii_header_check (header, "OS_FACTOR", "%s", buffer) >= 0)
+  { 
+    set_oversampling_factor (fromstring<Rational>(buffer));
+  }
 }
 
 /* ***********************************************************************
@@ -577,5 +586,17 @@ void dsp::ASCIIObservation::unload (char* header)
   if (ascii_header_set (header, "INSTRUMENT", "%s", get_machine().c_str()) < 0)
     throw Error (InvalidState, "ASCIIObservation", "failed unload INSTRUMENT");
 
+  // //////////////////////////////////////////////////////////////////////
+  //
+  // OS_FACTOR
+  //
+  Rational osfactor = get_oversampling_factor();
+
+  if (osfactor != 1)
+  {
+    string osf = tostring (osfactor);
+    if (ascii_header_set (header, "OS_FACTOR", "%s", osf.c_str() ) < 0 )
+      throw Error (InvalidState, "ASCIIObservation", "failed unload OS_FACTOR");
+  }
 }
 

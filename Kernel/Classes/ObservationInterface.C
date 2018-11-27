@@ -54,6 +54,10 @@ dsp::Observation::Interface::Interface( Observation *c )
   add( &Observation::get_state,
        &Observation::set_state,
        "state", "Data state" );
+
+  add( &Observation::get_oversampling_factor,
+       &Observation::set_oversampling_factor,
+       "osfactor", "Oversampling factor" );
   
   if (c)
     set_instance (c);

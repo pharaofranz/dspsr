@@ -63,7 +63,7 @@ namespace dsp {
     virtual void set_dispersion_measure (double dm);
 
     //! Set the rotation measure recorded in the archive
-    virtual void set_rotation_measure (double dm);
+    virtual void set_rotation_measure (double rm);
 
     //! Set the centre frequency of the band-limited signal in MHz
     virtual void set_centre_frequency (double cf);
@@ -101,6 +101,9 @@ namespace dsp {
     //! Set the cal frequency
     virtual void set_calfreq (double _calfreq);
 
+    //! Set the Oversampling ratio
+    virtual void set_oversampling_factor (const Rational&);
+
   protected:
 
     bool telescope_changed;
@@ -129,6 +132,7 @@ namespace dsp {
     bool nbit_changed;
     bool calfreq_changed;
     bool dual_sideband_changed;
+    bool oversampling_factor_changed;
 
   };
 
