@@ -8,7 +8,6 @@
 #include "dsp/Scratch.h"
 //
 #include "dsp/Transformation.h"
-//#include "dsp/LaunchConfig.h"
 
 class FilterbankInverseEngineCPU : public dsp::Filterbank::Engine
 {

@@ -63,6 +63,8 @@ void dsp::Observation::init ()
   dual_sideband = -1;
   require_equal_sources = true;
   require_equal_rates = true;
+
+  oversampling_factor = 1;
 }
 
 //! Set true if the data are dual sideband
@@ -309,6 +311,14 @@ bool dsp::Observation::combinable (const Observation & obs) const
     can_combine = false;
   }
 
+  if (oversampling_factor != obs.oversampling_factor)
+  {
+    reason += separator +
+        "different oversampling numerators:" + tostring(oversampling_factor) + 
+        " != " + tostring(obs.oversampling_factor);
+    can_combine = false;
+  }
+  
   return can_combine;
 }
 
@@ -412,6 +422,8 @@ const dsp::Observation& dsp::Observation::operator = (const Observation& in_obs)
   set_mode        ( in_obs.get_mode() );
   set_calfreq     ( in_obs.get_calfreq());
 
+  set_oversampling_factor ( in_obs.get_oversampling_factor() );
+
   return *this;
 }
 
@@ -484,3 +496,4 @@ TextInterface::Parser* dsp::Observation::get_interface ()
 {
   return new Interface (this);
 }
+

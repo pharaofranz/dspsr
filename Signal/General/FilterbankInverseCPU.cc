@@ -86,30 +86,31 @@ void FilterbankInverseEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSer
 	const uint64_t nInputChannels = in->get_nchan();
 	const uint64_t nOutputChannels = nInputChannels / nInputChannels;
 
-	static const int sizeOfComplexData = sizeof(float) * 2;
+	static const int floatsPerComplex = 2;
+	static const int sizeOfComplexData = sizeof(float) * floatsPerComplex;
 
-	// calculate offset and data count for stitching fft results with discarding bandedges (6.25% for each side)
-	const float percentOfDiscardBandEdge = 6.25;
-	int numOffsetForDiscard = _nFftSamples * percentOfDiscardBandEdge / 100;
+	// critically sampled number of channels retained from each fwd FFT
+	int stitchOffset = in->get_oversampling_factor().normalize(_nFftSamples);
+	assert ( (_nFftSamples - stitchOffset) % 2 == 0 );
+	// discard half of the oversampled channels from each side -> / 2
+	int numOffsetForDiscard = (_nFftSamples - stitchOffset) / 2;
 
-	// *2 is for  both side
-	int stitchOffset = _nFftSamples - numOffsetForDiscard * 2;
 	int numDataForCopy = stitchOffset * sizeOfComplexData;  
 
 	// temp data for check loop count
 	const int numTotalBytesToCopy = numDataForCopy * nInputChannels;
-	const int nPointsToCopy = numTotalBytesToCopy / sizeOfComplexData;
+	const int nPointsToBwdFFT = stitchOffset * nInputChannels;
 
-	_nPointsToKeep = (_nFftSamples - numOffsetForDiscard * 2) * nInputChannels 
+	_nPointsToKeep = nPointsToBwdFFT
 		- (_response->get_impulse_pos() + _response->get_impulse_neg());
 
-	// prepare memroy space to stitching data
+	// prepare memory space to stitching data
 	dsp::Scratch* stitchedSpace;
 	float* spaceForStitchingFft;
 
 	stitchedSpace = new dsp::Scratch;
 	spaceForStitchingFft = stitchedSpace->space<float>
-		(nInputChannels * numDataForCopy );
+		(nInputChannels * stitchOffset );
 
 	for(auto iOutputChannels = 0; iOutputChannels < nOutputChannels; iOutputChannels++) {
 
@@ -149,13 +150,13 @@ void FilterbankInverseEngineCPU::perform(const dsp::TimeSeries* in, dsp::TimeSer
 
 					// number of input data for Backward FFT should be 
 					// adjusted because it is not power of 2 due to discarding bandedges
-					_backward->bcc1d(nPointsToCopy, _complexTime, spaceForStitchingFft);
+					_backward->bcc1d(nPointsToBwdFFT, _complexTime, spaceForStitchingFft);
 
 					// Copy output data to output
 					// start point of output data, so used 0,0
 					void* destinationPtr = out->get_datptr(0,0) 
-						+ (iPart * nPolarizations + iPolarization) * nPointsToCopy;
-					void* sourcePtr = _complexTime + _nFilterPosition*2;
+						+ (iPart * nPolarizations + iPolarization) * _nPointsToKeep;
+					void* sourcePtr = _complexTime + _nFilterPosition*floatsPerComplex;
 
 					memcpy(destinationPtr, sourcePtr, _nPointsToKeep * sizeOfComplexData);
 				} // end of if(out!=nullptr)

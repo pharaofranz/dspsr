@@ -35,6 +35,7 @@ dsp::ObservationChange::ObservationChange ()
   nbit_changed = false;
   calfreq_changed = false;
   dual_sideband_changed = false;
+  oversampling_factor_changed = false;
 }
 
 //! Set the attributes that have been changed
@@ -117,6 +118,9 @@ void dsp::ObservationChange::change (Observation* target) const
 
   if (dual_sideband_changed)
     target->set_dual_sideband( get_dual_sideband() );
+
+  if (oversampling_factor_changed)
+    target->set_oversampling_factor( get_oversampling_factor() );
 }
 
 //! Set the telescope name
@@ -299,3 +303,11 @@ void dsp::ObservationChange::set_calfreq (double arg)
   calfreq_changed = true;
   Observation::set_calfreq (arg);
 }
+
+//! Set the Oversampling ratio
+void dsp::ObservationChange::set_oversampling_factor (const Rational& arg)
+{
+  oversampling_factor_changed = true;
+  Observation::set_oversampling_factor (arg);
+}
+

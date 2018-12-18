@@ -63,13 +63,20 @@ namespace dsp {
         //! Get the number of channels into which the input will be divided
         unsigned get_nPolarization() const noexcept { return input->get_npol(); }
 		
-		//! Set the frequency resolution factor
+	  //! Set the frequency resolution factor
         void set_freq_res(unsigned _freq_res) noexcept { freq_res = _freq_res; }
         void set_frequency_resolution(unsigned fres) noexcept { freq_res = fres; }
         
         //! Get the frequency resolution factor
         unsigned get_freq_res() const noexcept { return freq_res; } 
         unsigned get_frequency_resolution() const noexcept { return freq_res; }
+        
+        //! Set the Oversampling factor num & denom
+        void set_oversampling_factor (const Rational& _osf) { oversampling_factor = _osf; }
+
+        //! Get the Oversampling factor num & denom
+        const Rational& get_oversampling_factor() {return input->get_oversampling_factor();}
+
         
         //! Engine used to perform discrete convolution step
         class Engine;
@@ -98,6 +105,9 @@ namespace dsp {
         //! Frequency channel overlap ratio
         //double overlap_ratio;
         
+        //! Oversampling factor 
+        Rational oversampling_factor;
+ 
         //! Interface to alternate processing engine(e.g. GPU)
         //Reference::To<Engine> engineunsigned tres_ratio;
         
