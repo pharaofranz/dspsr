@@ -31,7 +31,10 @@ endif
 
 bin_PROGRAMS = dspsr
 
+check_PROGRAMS = test_PulsarSimulator
+
 dspsr_SOURCES = dspsr.C 
+test_PulsarSimulator_SOURCES = test_PulsarSimulator.C
 
 #############################################################################
 #
