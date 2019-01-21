@@ -14,11 +14,19 @@
 
 #include "dsp/Operation.h"
 
+namespace Pulsar
+{
+  class PolnProfile;
+  class Predictor;
+}
+
 namespace dsp {
 
   //! An object that can fill a TimeSeries with simulated pulsar signal
   class PulsarSimulator : public Operation
   {
+    Reference::To<Pulsar::PolnProfile> profile;
+    Reference::To<Pulsar::Predictor> predictor;
 
   public:
     

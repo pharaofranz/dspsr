@@ -10,12 +10,20 @@
 #include "dsp/PulsarSimulator.h"
 #include "dsp/TimeSeries.h"
 
+#include "Pulsar/Archive.h"
+#include "Pulsar/Parameters.h"
+
 #include "strutil.h"
 #include "dirutil.h"
 
-static char* args = "b:n:op:t:vV";
+static char* args = "a:e:p:vV";
+
+// e = ephemeris = pulsar parameters from catalog
+// p = predictor = output of tempo / tempo2
+// a = archive = pulse phase bins that define Stokes parameters
 
 using namespace std;
+using namespace Pulsar;
 
 void usage ()
 {
@@ -30,21 +38,27 @@ try {
 
   Error::verbose = true;
   Error::complete_abort = true;
-
-  char* metafile = 0;
   bool verbose = false;
 
-  // number of time samples loaded from file at a time
-  int block_size = 512*1024;
-  int blocks = 0;
-  int ndim = 1;
-  int nbin = 1024;
-  Signal::State output_state = Signal::Coherence;
-  bool inplace_detection = true;
+  char* archive_filename = 0;   // open and use as in getStokes.C
+  char* parameter_filename = 0; // open and use as in test_Predictor.C
+  char* predictor_filename = 0; // open and use to avoid calling the Generator (which takes heaps of time)
 
   int c;
   while ((c = getopt(argc, argv, args)) != -1)
     switch (c) {
+
+    case 'a':
+      archive_filename = optarg;
+      break;
+
+    case 'e':
+      parameter_filename = optarg;
+      break;
+
+    case 'p':
+      predictor_filename = optarg;
+      break;
 
     case 'V':
       dsp::Operation::verbose = true;
@@ -53,46 +67,35 @@ try {
       verbose = true;
       break;
 
-    case 'b':
-      nbin = atoi (optarg);
-      break;
-
-    case 't':
-      blocks = atoi (optarg);
-      break;
-
-    case 'n':
-      ndim = atoi (optarg);
-      break;
-
-    case 'o': inplace_detection = false; break;
-
-    case 'p':
-      {
-	unsigned npol = atoi(optarg);
-	if( npol==1 ) output_state = Signal::Intensity;
-	if( npol==4 ) output_state = Signal::Coherence;
-	break;
-      }
-
     default:
       cerr << "invalid param '" << c << "'" << endl;
     }
 
-  vector <string> filenames;
 
-  if (metafile)
-    stringfload (&filenames, metafile);
-  else 
-    for (int ai=optind; ai<argc; ai++)
-      dirglob (&filenames, argv[ai]);
-
-#if 0
-  if (filenames.size() == 0) {
-    usage ();
-    return -1;
+  if (!archive_filename)
+  {
+     cerr << "Please specify the name of the file containing the average pulse profile with -a" << endl;
+     return -1;
   }
-#endif
+
+  if (!parameter_filename && !predictor_filename)
+  {
+     cerr << "Please specify the name of the file containing either the pulsar parameters (-e) or predictor (-p)" << endl;
+     return -1;
+  }
+
+  cerr << "Loading average pulse profile from " << archive_filename << endl;
+  Archive* archive = 0; // do as in getStokes.C to get a PolnProfile
+
+  if (parameter_filename)
+  {
+    cerr << "Loading average pulse profile from " << archive_filename << endl;
+    Parameters* parameters = 0; // do as in test_Predictor.C to get a Predictor
+  }
+  else if (predictor_filename)
+  {
+    // load a Predictor directly from file (same syntax as loading Parameters from file)
+  }
 
   if (verbose)
     cerr << "Creating TimeSeries instance" << endl;
@@ -100,9 +103,13 @@ try {
 
 
   dsp::PulsarSimulator simulator;
+
+   // simulator.set_Predictor (predictor);
+   // simulator.set_PolnProfile (profile);
+
   simulator.operate();
 
-  fprintf(stderr,"biyee!\n");
+  cerr << "biyee!" << endl;
   return 0;
 }
 

@@ -8,6 +8,7 @@
 #include "dsp/PulsarSimulator.h"
 
 #include "Pulsar/Predictor.h"
+#include "Pulsar/PolnProfile.h"
 
 using namespace std;
 using namespace Pulsar;
