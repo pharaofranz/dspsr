@@ -21,6 +21,7 @@
 
 #include "dsp/SampleDelay.h"
 #include "dsp/DedispersionSampleDelay.h"
+#include "dsp/DelayStartTime.h"
 
 #include "dsp/FScrunch.h"
 #include "dsp/TScrunch.h"
@@ -67,6 +68,7 @@ dsp::LoadToFil::Config::Config()
   dispersion_measure = 0;
   dedisperse = false;
   coherent_dedisp = false;
+  start_time_delay = 0;
 
   excision_enable = true;
 
@@ -302,6 +304,19 @@ void dsp::LoadToFil::construct () try
     fscrunch->set_output( timeseries );
 
     operations.push_back( fscrunch );
+  }
+
+  if (config->start_time_delay > 0)
+  {
+    MJD start = obs->get_start_time();
+    MJD new_start = start + config->start_time_delay;
+
+    DelayStartTime * start_delay = new DelayStartTime;
+    start_delay->set_input (timeseries);
+    start_delay->set_output (timeseries);
+    start_delay->set_start_time (new_start);
+
+    operations.push_back( start_delay );
   }
 
   if ( config->tscrunch_factor )

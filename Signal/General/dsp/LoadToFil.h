@@ -91,6 +91,9 @@ namespace dsp {
     //! enable or disable 2-bit excision
     bool excision_enable;
 
+    //! artificial delay to the start time in seconds
+    double start_time_delay;
+
     //! integrate in time before digitization
     unsigned tscrunch_factor;
 
