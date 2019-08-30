@@ -348,7 +348,9 @@ void dsp::LoadToFold::construct () try
 
     if (convolve_when == Filterbank::Config::During) {
       if (kernel) {
-        std::cerr << "dspsr: adding InverseFilterbankResponse to Dedispersion kernel" << std::endl;
+        if (dsp::Operation::verbose) {
+          std::cerr << "dspsr: adding InverseFilterbankResponse to Dedispersion kernel" << std::endl;
+        }
         if (!response_product) {
           response_product = new ResponseProduct;
         }
