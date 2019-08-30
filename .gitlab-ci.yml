@@ -40,4 +40,5 @@ deploy:
     - docker tag $image:$version $image:latest 
     - docker push $image:$version 
     - docker push $image:latest 
-
+  only:
+    - master
