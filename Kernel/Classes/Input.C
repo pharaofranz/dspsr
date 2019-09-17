@@ -66,7 +66,7 @@ void dsp::Input::reserve (BitSeries* buffer)
     maximum_load_size += 2 * resolution;
 
   if (verbose)
-    cerr << "dsp::Input::reserve block_size=" << block_size 
+    cerr << "dsp::Input::reserve block_size=" << block_size
          << " maximum_load_size=" << maximum_load_size << endl;
 
   buffer->resize (maximum_load_size);
@@ -99,8 +99,8 @@ void dsp::Input::mark_output ()
 void dsp::Input::operation ()
 {
   if (block_size < overlap)
-    throw Error (InvalidState, "dsp::Input::operation", 
-                 "block_size="UI64" < overlap="UI64, block_size, overlap);
+    throw Error (InvalidState, "dsp::Input::operation",
+                 "block_size=" UI64 " < overlap=" UI64, block_size, overlap);
 
   if (eod())
     throw Error (EndOfFile, "dsp::Input::operation",
@@ -123,11 +123,11 @@ void dsp::Input::operation ()
   output->change_start_time (load_sample);
 
   if (verbose)
-    cerr << "dsp::Input::operation [INTERNAL] load_size=" << load_size 
+    cerr << "dsp::Input::operation [INTERNAL] load_size=" << load_size
 	 << " load_sample=" << load_sample << endl;
 
   if (verbose)
-    cerr << "dsp::Input::operation call load_data Bit_Stream::ndat=" 
+    cerr << "dsp::Input::operation call load_data Bit_Stream::ndat="
          << output->get_ndat () << endl;
 
   reserve ();
@@ -158,7 +158,7 @@ void dsp::Input::operation ()
 
     if (verbose)
       cerr << "dsp::Input::operation total_ndat=" << output->get_ndat()
-           << " available=" << available 
+           << " available=" << available
            << " < block_size=" << block_size << endl;
 
     to_seek = available;
@@ -208,7 +208,7 @@ dsp::BitSeries* dsp::Input::get_output ()
   if (!output)
     throw Error (InvalidState, "dsp::Input::get_output", "no output set");
 
-  return output; 
+  return output;
 }
 
 bool dsp::Input::has_output () const
@@ -234,7 +234,7 @@ void dsp::Input::copy (const Input* input)
   resolution = input->resolution;
 }
 
-/*! 
+/*!
   Sets the Observation attributes of data and load the next block of data.
   Because set_output and operate must be called separately, the
   only thread-safe interface to the Input class.
@@ -258,9 +258,9 @@ void dsp::Input::load (BitSeries* data) try {
    throw error += "dsp::Input::load (BitSeries*)";
  }
 
-/*! 
-  ensures that the load_sample attribute accomodates any extra 
-  time samples required owing to time sample resolution. also 
+/*!
+  ensures that the load_sample attribute accomodates any extra
+  time samples required owing to time sample resolution. also
   ensures that the load_size attribute is properly set.
 
   \param offset the number of time samples to offset
@@ -283,7 +283,7 @@ void dsp::Input::seek (int64_t offset, int whence)
   case SEEK_CUR:
     if (offset < -(int64_t)next_sample)
       throw Error (InvalidRange, "dsp::Input::seek", "SEEK_CUR -ve "
-		   "offset="I64" and next_sample="I64,
+		   "offset=" I64 " and next_sample=" I64,
 		   offset,(int64_t)next_sample);
     next_sample += offset;
     break;
@@ -307,8 +307,8 @@ void dsp::Input::seek (int64_t offset, int whence)
   load_sample = next_sample - resolution_offset;
 
   if (verbose)
-    cerr << "dsp::Input::seek [INTERNAL] resolution=" << resolution 
-         << " resolution_offset=" << resolution_offset 
+    cerr << "dsp::Input::seek [INTERNAL] resolution=" << resolution
+         << " resolution_offset=" << resolution_offset
 	 << " load_sample=" << load_sample << endl;
 
   // ensure that the load_size attribute is properly set
@@ -341,7 +341,7 @@ void dsp::Input::seek(MJD mjd)
 
     throw Error (InvalidParam, "dsp::Input::seek", msg.c_str(), seek_seconds);
   }
- 
+
   double seek_samples = seek_seconds*get_info()->get_rate();
   uint64_t actual_seek = 0;
 
@@ -353,7 +353,7 @@ void dsp::Input::seek(MJD mjd)
     actual_seek = uint64_t(seek_samples);
 
   if( verbose )
-    fprintf(stderr,"dsp::Input::seek(MJD) will seek %f = "UI64" samples\n",
+    fprintf(stderr,"dsp::Input::seek(MJD) will seek %f = " UI64 " samples\n",
 	    seek_samples, actual_seek);
 
   seek( actual_seek, SEEK_SET );
@@ -404,7 +404,7 @@ void dsp::Input::set_total_seconds (double seconds)
 
   if ((total_samples > get_total_samples()) && (get_total_samples() > 0) )
     throw Error (InvalidParam, "dsp::Input::set_total_seconds",
-		 "samples="UI64" > total samples="UI64, total_samples,
+		 "samples=" UI64 " > total samples=" UI64, total_samples,
 		 get_total_samples());
 
   set_total_samples ( total_samples );
@@ -426,7 +426,7 @@ void dsp::Input::set_block_size (uint64_t size)
 void dsp::Input::set_load_size ()
 {
   if (verbose)
-    cerr << "dsp::Input::set_load_size block_size=" << block_size 
+    cerr << "dsp::Input::set_load_size block_size=" << block_size
          << " resolution_offset=" << resolution_offset << endl;
 
   load_size = block_size + resolution_offset;
@@ -447,4 +447,3 @@ void dsp::Input::set_load_size ()
   if (verbose)
     cerr << "dsp::Input::set_load_size load_size=" << load_size << endl;
 }
-

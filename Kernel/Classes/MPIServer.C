@@ -8,6 +8,8 @@
 #include "dsp/MPIRoot.h"
 #include "dsp/BitSeries.h"
 
+using namespace std;
+
 //! Default constructor
 dsp::MPIServer::MPIServer ()
 {
@@ -88,7 +90,7 @@ void dsp::MPIServer::serve ()
 
     int index = 0;
     int mpi_err = MPI_Waitany( root.size(), requests, &index, &status );
-    
+
     if (index == MPI_UNDEFINED)
       throw Error (InvalidState, "dsp::MPIServer::server",
 		   "MPI_Waitany index=MPI_UNDEFINED");
@@ -104,7 +106,7 @@ void dsp::MPIServer::serve ()
     int dest = status.MPI_SOURCE;
 
     if (MPIRoot::verbose)
-      cerr << "dsp::MPIServer::serve index=" << index 
+      cerr << "dsp::MPIServer::serve index=" << index
 	   << " dest=" << dest << endl;
 
     if ( root[index]->input->eod() ) {
@@ -123,10 +125,9 @@ void dsp::MPIServer::serve ()
 
       if (MPIRoot::verbose)
 	cerr << "dsp::MPIServer::serve sending data to " << dest << endl;
-      
+
       root[index]->send_data (data, dest);
 
     }
   }
 }
-

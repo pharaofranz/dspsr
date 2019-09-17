@@ -1,0 +1,2 @@
+#cmakedefine HAVE_CUDA @HAVE_CUDA@
+#cmakedefine HAVE_MPI @HAVE_MPI@
