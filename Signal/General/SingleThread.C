@@ -64,10 +64,12 @@ dsp::SingleThread::SingleThread ()
 
 dsp::SingleThread::~SingleThread ()
 {
+  std::cerr << "dsp::SingleThread::~SingleThread" << std::endl;
 }
 
 void dsp::SingleThread::set_configuration (Config* configuration)
 {
+  // std::cerr << "dsp::SingleThread::set_configuration(" << configuration << ")" << std::endl;
   config = configuration;
 }
 

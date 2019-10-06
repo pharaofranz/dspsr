@@ -1,32 +1,38 @@
 %module dspsr
-/* class Engine {
-  public:
-    virtual void set_scratch (void *) = 0;
-
-    virtual void prepare (dsp::Convolution* convolution) = 0;
-
-    virtual void perform (const dsp::TimeSeries* in, dsp::TimeSeries* out, unsigned npart) = 0;
-};
-%nestedworkaround dsp::Convolution::Engine; */
+%feature("flatnested", "1");
 
 %{
 #define SWIG_FILE_WITH_INIT
+#include <iostream>
 #include "numpy/noprefix.h"
 
+#include "dsp/Operation.h"
+#include "dsp/File.h"
 #include "Reference.h"
 #include "dsp/Transformation.h"
 #include "dsp/Unpacker.h"
-#include "dsp/Operation.h"
 #include "dsp/Observation.h"
 #include "dsp/DataSeries.h"
 #include "dsp/IOManager.h"
 #include "dsp/Input.h"
+
 #include "dsp/BitSeries.h"
 #include "dsp/TimeSeries.h"
 #include "dsp/Detection.h"
-#include "dsp/Dedispersion.h"
+
+#include "dsp/Shape.h"
 #include "dsp/Response.h"
+#include "dsp/Dedispersion.h"
+
 #include "dsp/Convolution.h"
+#include "dsp/FilterbankConfig.h"
+#include "dsp/Filterbank.h"
+#include "dsp/InverseFilterbankConfig.h"
+#include "dsp/InverseFilterbank.h"
+
+#include "dsp/SingleThread.h"
+#include "dsp/LoadToFold1.h"
+#include "dsp/LoadToFoldConfig.h"
 
 using namespace dsp;
 
@@ -70,6 +76,7 @@ using namespace std;
 // variables act like Reference::To pointers.
 %feature("ref")   Reference::Able "pointer_tracker_add($this);"
 %feature("unref") Reference::Able "pointer_tracker_remove($this);"
+
 %header %{
 std::vector< Reference::To<Reference::Able> > _pointer_tracker;
 void pointer_tracker_add(Reference::Able *ptr) {
@@ -95,7 +102,18 @@ void pointer_tracker_remove(Reference::Able *ptr) {
 %ignore dsp::Observation::verbose_nbytes(uint64_t) const;
 %ignore dsp::Observation::set_deripple(const std::vector<dsp::FIRFilter>&);
 %ignore dsp::Observation::get_deripple();
+// dsp::SingleThread::cerr breaks SWIG
+%ignore dsp::SingleThread::cerr;
 
+%rename (TimeSeries_Engine) dsp::TimeSeries::Engine;
+%rename (Detection_Engine) dsp::Detection::Engine;
+%rename (Convolution_Engine) dsp::Convolution::Engine;
+%rename (Filterbank_Engine) dsp::Filterbank::Engine;
+%rename (Filterbank_Config) dsp::Filterbank::Config;
+%rename (InverseFilterbank_Engine) dsp::InverseFilterbank::Engine;
+%rename (InverseFilterbank_Config) dsp::InverseFilterbank::Config;
+%rename (SingleThread_Config) dsp::SingleThread::Config;
+%rename (LoadToFold_Config) dsp::LoadToFold::Config;
 // Return psrchive's Estimate class as a Python tuple
 %typemap(out) Estimate<double> {
     PyTupleObject *res = (PyTupleObject *)PyTuple_New(2);
@@ -124,6 +142,20 @@ void pointer_tracker_remove(Reference::Able *ptr) {
     }
 }
 %enddef
+
+
+// the `arg2` name may not be persistent in different SWIG versions, or
+// may be modified if the source code is modified
+// %pythonprepend dsp::LoadToFold::set_configuration %{
+//     if hasattr(arg2, "thisown"):
+//         arg2.thisown = 0
+// %}
+//
+// %pythonprepend dsp::LoadToFold::LoadToFold %{
+//     if hasattr(config, "thisown"):
+//         config.thisown = 0
+// %}
+
 %map_enum(State)
 %map_enum(Basis)
 %map_enum(Scale)
@@ -134,27 +166,36 @@ void pointer_tracker_remove(Reference::Able *ptr) {
 
 
 // Header files included here will be wrapped
+%include "dsp/Operation.h"
 %include "ReferenceAble.h"
 %include "dsp/Transformation.h"
 
 %template(TransformationTimeSeriesTimeSeries) dsp::Transformation<dsp::TimeSeries, dsp::TimeSeries>;
-template class dsp::Transformation<dsp::TimeSeries, dsp::TimeSeries>;
+/* template class dsp::Transformation<dsp::TimeSeries, dsp::TimeSeries>; */
 
-
-%include "dsp/Input.h"
-%include "dsp/Operation.h"
 %include "dsp/Observation.h"
+%include "dsp/Input.h"
+%include "dsp/Seekable.h"
+%include "dsp/File.h"
 %include "dsp/DataSeries.h"
 %include "dsp/IOManager.h"
 %include "dsp/Input.h"
 %include "dsp/BitSeries.h"
 %include "dsp/TimeSeries.h"
-// Detection::Engine is screwing this up...
-/* %include "dsp/Detection.h" */
-%include "dsp/Dedispersion.h"
+%include "dsp/Detection.h"
+%include "dsp/Shape.h"
 %include "dsp/Response.h"
-/* %include "dsp/InverseFilterbank.h" */
+%include "dsp/Dedispersion.h"
+
 %include "dsp/Convolution.h"
+%include "dsp/Filterbank.h"
+%include "dsp/FilterbankConfig.h"
+%include "dsp/InverseFilterbank.h"
+%include "dsp/InverseFilterbankConfig.h"
+
+%include "dsp/SingleThread.h"
+%include "dsp/LoadToFold1.h"
+%include "dsp/LoadToFoldConfig.h"
 
 // Python-specific extensions to the classes:
 %extend dsp::TimeSeries

@@ -98,11 +98,13 @@ dsp::LoadToFold::LoadToFold (Config* configuration)
 
 dsp::LoadToFold::~LoadToFold ()
 {
+  std::cerr << "dsp::LoadToFold::~LoadToFold" << std::endl;
 }
 
 //! Run through the data
 void dsp::LoadToFold::set_configuration (Config* configuration)
 {
+  // std::cerr << "dsp::LoadToFold::set_configuration(" << configuration << ")" << std::endl;
   SingleThread::set_configuration (configuration);
   config = configuration;
 }
@@ -718,7 +720,7 @@ void dsp::LoadToFold::prepare_interchan (TimeSeries* data, bool run_on_gpu)
   {
     sample_delay->set_engine (
         new CUDA::SampleDelayEngine ((cudaStream_t) gpu_stream));
-    // Note, this assumes the data TimeSeries memory has already been 
+    // Note, this assumes the data TimeSeries memory has already been
     // properly set up to use the GPU.
   }
 #endif
@@ -1507,6 +1509,10 @@ void dsp::LoadToFold::run ()
 //! Run through the data
 void dsp::LoadToFold::finish () try
 {
+
+  if (Operation::verbose) {
+    std::cerr << "dsp::LoadToFold::finish" << std::endl;
+  }
   if (phased_filterbank)
   {
     cerr << "Calling PhaseLockedFilterbank::normalize_output" << endl;
@@ -1543,6 +1549,11 @@ void dsp::LoadToFold::finish () try
 
     }
   }
+  if (Operation::verbose) {
+    std::cerr << "dsp::LoadToFold::finish done" << std::endl;
+  }
+
+
 }
 catch (Error& error)
 {

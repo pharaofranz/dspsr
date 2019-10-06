@@ -149,6 +149,10 @@ dsp::LoadToFold::Config::Config ()
 
 }
 
+dsp::LoadToFold::Config::~Config () {
+  std::cerr << "dsp::LoadToFold::Config::~Config" << std::endl;
+}
+
 // set block size to this factor times the minimum possible
 void dsp::LoadToFold::Config::set_times_minimum_ndat (unsigned ndat)
 {
