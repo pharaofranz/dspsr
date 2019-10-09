@@ -7,6 +7,8 @@
 
 #include "dsp/Filterbank.h"
 #include "dsp/FilterbankEngine.h"
+#include "dsp/FilterbankEngineCUDA.h"
+#include "dsp/FilterbankEngineCPU.h"
 
 #include "dsp/WeightedTimeSeries.h"
 #include "dsp/Response.h"
@@ -37,6 +39,8 @@ void dsp::Filterbank::set_engine (Engine* _engine)
 {
   engine = _engine;
 }
+
+
 
 dsp::Filterbank::Engine* dsp::Filterbank::get_engine ()
 {

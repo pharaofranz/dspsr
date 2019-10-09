@@ -11,6 +11,8 @@
 #ifndef __Filterbank_h
 #define __Filterbank_h
 
+#include <string>
+
 #include "dsp/Convolution.h"
 
 namespace dsp {

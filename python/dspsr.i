@@ -3,6 +3,7 @@
 
 %{
 #define SWIG_FILE_WITH_INIT
+/* #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION */
 #include <iostream>
 #include "numpy/noprefix.h"
 
@@ -25,8 +26,13 @@
 #include "dsp/Dedispersion.h"
 
 #include "dsp/Convolution.h"
+
 #include "dsp/FilterbankConfig.h"
 #include "dsp/Filterbank.h"
+#include "dsp/FilterbankEngine.h"
+#include "dsp/FilterbankEngineCPU.h"
+#include "dsp/FilterbankEngineCUDA.h"
+
 #include "dsp/InverseFilterbankConfig.h"
 #include "dsp/InverseFilterbank.h"
 
@@ -97,23 +103,30 @@ void pointer_tracker_remove(Reference::Able *ptr) {
 %ignore dsp::IOManager::combine(const Operation*);
 %ignore dsp::IOManager::set_scratch(Scratch*);
 %ignore dsp::BitSeries::set_memory(Memory*);
-%ignore dsp::Detection::set_engine(Engine*);
-%ignore dsp::Convolution::set_engine(Engine*);
 %ignore dsp::Observation::verbose_nbytes(uint64_t) const;
 %ignore dsp::Observation::set_deripple(const std::vector<dsp::FIRFilter>&);
 %ignore dsp::Observation::get_deripple();
 // dsp::SingleThread::cerr breaks SWIG
 %ignore dsp::SingleThread::cerr;
 
-%rename (TimeSeries_Engine) dsp::TimeSeries::Engine;
-%rename (Detection_Engine) dsp::Detection::Engine;
-%rename (Convolution_Engine) dsp::Convolution::Engine;
-%rename (Filterbank_Engine) dsp::Filterbank::Engine;
-%rename (Filterbank_Config) dsp::Filterbank::Config;
-%rename (InverseFilterbank_Engine) dsp::InverseFilterbank::Engine;
-%rename (InverseFilterbank_Config) dsp::InverseFilterbank::Config;
-%rename (SingleThread_Config) dsp::SingleThread::Config;
-%rename (LoadToFold_Config) dsp::LoadToFold::Config;
+%rename (TimeSeriesEngine) dsp::TimeSeries::Engine;
+%rename (DetectionEngine) dsp::Detection::Engine;
+%rename (ConvolutionEngine) dsp::Convolution::Engine;
+
+%rename (FilterbankEngine) dsp::Filterbank::Engine;
+%rename (FilterbankEngineCUDA) CUDA::FilterbankEngine;
+%rename (FilterbankConfig) dsp::Filterbank::Config;
+
+%rename (InverseFilterbankEngine) dsp::InverseFilterbank::Engine;
+%rename (InverseFilterbankConfig) dsp::InverseFilterbank::Config;
+
+%rename (SingleThreadConfig) dsp::SingleThread::Config;
+%rename (LoadToFoldConfig) dsp::LoadToFold::Config;
+
+%feature("notabstract") dsp::FilterbankEngineCPU;
+%feature("notabstract") CUDA::FilterbankEngine;
+
+
 // Return psrchive's Estimate class as a Python tuple
 %typemap(out) Estimate<double> {
     PyTupleObject *res = (PyTupleObject *)PyTuple_New(2);
@@ -143,18 +156,53 @@ void pointer_tracker_remove(Reference::Able *ptr) {
 }
 %enddef
 
+%pythoncode %{
+
+def _set_config(config_obj, config_dict):
+    # print("set_config: config_obj={}, config_dict={}".format(config_obj, config_dict))
+    for key, value in config_dict.items():
+        if hasattr(value, "keys"):
+            config_sub_obj = getattr(config_obj, key)
+            _set_config(config_sub_obj, value)
+            continue
+
+        set_method_name = "set_{}".format(key)
+
+        if hasattr(config_obj, key):
+            # print("setting {} to {}".format(key, value))
+            setattr(config_obj, key, value)
+        elif hasattr(config_obj, set_method_name):
+            # print("calling {} with {}".format(set_method_name, value))
+            getattr(config_obj, set_method_name)(value)
+
+%}
+
 
 // the `arg2` name may not be persistent in different SWIG versions, or
 // may be modified if the source code is modified
-// %pythonprepend dsp::LoadToFold::set_configuration %{
-//     if hasattr(arg2, "thisown"):
-//         arg2.thisown = 0
-// %}
-//
-// %pythonprepend dsp::LoadToFold::LoadToFold %{
-//     if hasattr(config, "thisown"):
-//         config.thisown = 0
-// %}
+%pythonprepend dsp::LoadToFold::set_configuration %{
+    if hasattr(arg2, "thisown"):
+        arg2.thisown = 0
+
+    if hasattr(arg2, "keys"):
+        config_obj = LoadToFoldConfig()
+        _set_config(config_obj, arg2)
+        arg2 = config_obj
+
+%}
+
+
+%pythonprepend dsp::LoadToFold::LoadToFold %{
+    if hasattr(config, "thisown"):
+        config.thisown = 0
+
+    if hasattr(config, "keys"):
+        config_obj = LoadToFoldConfig()
+        _set_config(config_obj, config)
+        config = config_obj
+%}
+
+
 
 %map_enum(State)
 %map_enum(Basis)
@@ -171,7 +219,6 @@ void pointer_tracker_remove(Reference::Able *ptr) {
 %include "dsp/Transformation.h"
 
 %template(TransformationTimeSeriesTimeSeries) dsp::Transformation<dsp::TimeSeries, dsp::TimeSeries>;
-/* template class dsp::Transformation<dsp::TimeSeries, dsp::TimeSeries>; */
 
 %include "dsp/Observation.h"
 %include "dsp/Input.h"
@@ -183,12 +230,16 @@ void pointer_tracker_remove(Reference::Able *ptr) {
 %include "dsp/BitSeries.h"
 %include "dsp/TimeSeries.h"
 %include "dsp/Detection.h"
+
 %include "dsp/Shape.h"
 %include "dsp/Response.h"
 %include "dsp/Dedispersion.h"
 
 %include "dsp/Convolution.h"
 %include "dsp/Filterbank.h"
+%include "dsp/FilterbankEngine.h"
+%include "dsp/FilterbankEngineCPU.h"
+%include "dsp/FilterbankEngineCUDA.h"
 %include "dsp/FilterbankConfig.h"
 %include "dsp/InverseFilterbank.h"
 %include "dsp/InverseFilterbankConfig.h"

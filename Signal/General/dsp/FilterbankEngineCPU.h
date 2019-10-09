@@ -33,6 +33,8 @@ namespace dsp
     void perform (const dsp::TimeSeries* in, dsp::TimeSeries* out,
                   uint64_t npart, uint64_t in_step, uint64_t out_step);
 
+    void set_passband (dsp::Response* _response) { response = _response; }
+
     void finish ();
 
     FTransform::Plan* get_forward ();

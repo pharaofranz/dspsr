@@ -118,6 +118,7 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
 
   if ( device_memory )
   {
+    std::cerr << "dsp::Filterbank::Config::create using CUDA::FilterbankEngine" << std::endl;
     cudaStream_t cuda_stream = reinterpret_cast<cudaStream_t>( stream );
 
     filterbank->set_engine (new CUDA::FilterbankEngine (cuda_stream));
@@ -129,6 +130,7 @@ dsp::Filterbank* dsp::Filterbank::Config::create ()
   else
 #endif
   {
+    std::cerr << "dsp::Filterbank::Config::create using FilterbankEngineCPU" << std::endl;
     filterbank->set_engine (new FilterbankEngineCPU);
   }
 
