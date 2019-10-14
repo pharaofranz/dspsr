@@ -1,6 +1,10 @@
 atol = 1e-3
 rtol = 1e-3
 
+[ScalarAdd]
+file_name = "test_data.dump"
+
+
 [SpectralKurtosis.test_SpectralKurtosis_integration]
 file_name = "1644-4559.pre_Convolution.dump"
 s_chan = 0

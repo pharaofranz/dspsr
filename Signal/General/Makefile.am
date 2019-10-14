@@ -28,7 +28,8 @@ nobase_include_HEADERS = dsp/ACFilterbank.h dsp/Detection.h	       \
 	dsp/InverseFilterbank.h dsp/InverseFilterbankEngine.h \
 	dsp/InverseFilterbankConfig.h \
 	dsp/InverseFilterbankEngineCPU.h \
-	dsp/InverseFilterbankResponse.h
+	dsp/InverseFilterbankResponse.h \
+	dsp/ScalarAdd.h
 
 libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
 	cross_detect.ic stokes_detect.c stokes_detect.h		     \
@@ -50,7 +51,8 @@ libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
 	InverseFilterbank.C \
 	InverseFilterbankConfig.C \
 	InverseFilterbankEngineCPU.C \
-	InverseFilterbankResponse.C
+	InverseFilterbankResponse.C \
+	ScalarAdd.C
 
 
 bin_PROGRAMS = dmsmear digitxt digimon digihist filterbank_speed
