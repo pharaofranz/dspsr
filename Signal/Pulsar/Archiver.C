@@ -872,6 +872,9 @@ try
 
   float profile_weight = 1.0;
 
+  if (not_finite == nbin || hits_sum == 0)
+    profile_weight = 0.0;
+
   if (ipol == 0 && profile->has_bin_weights())
   {
     float* weights = profile->get_bin_weights();
