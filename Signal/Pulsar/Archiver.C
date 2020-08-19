@@ -872,10 +872,8 @@ try
 
   float profile_weight = 1.0;
 
-  if (npol == 0 && profile->has_bin_weights())
+  if (ipol == 0 && profile->has_bin_weights())
   {
-    cerr << "set profile bin weights" << endl;
-    
     float* weights = profile->get_bin_weights();
     for (unsigned ibin = 0; ibin<nbin; ibin++)
       weights[ibin] = hits_out[ibin];
