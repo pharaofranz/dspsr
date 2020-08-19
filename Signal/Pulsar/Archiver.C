@@ -841,9 +841,11 @@ try
   unsigned not_finite = 0;
   unsigned hits_sum = 0;
 
+  vector<float> hits_out (nbin);
+
   for (unsigned ibin = 0; ibin<nbin; ibin++)
   {
-    hits_sum += hits[ibin];
+    hits_out[ibin] = hits[ibin];
 
     if (hits[ibin] == 0)
     {
@@ -853,16 +855,32 @@ try
     else if (!finite(*from))
     {
       not_finite ++;
+      into[ibin] = 0.0;
+     
       if (verbose > 2)
         cerr << "non-finite: hit=" << hits[ibin] << endl;
+
+      into[ibin] = 0.0;
+      hits_out[ibin] = 0.0;
     }
     else
       into[ibin] = *from / (scale * double( hits[ibin] ));
 
+    hits_sum += hits_out[ibin];
     from += nstride;
   }
 
-  if (not_finite)
+  float profile_weight = 1.0;
+
+  if (npol == 0 && profile->has_bin_weights())
+  {
+    cerr << "set profile bin weights" << endl;
+    
+    float* weights = profile->get_bin_weights();
+    for (unsigned ibin = 0; ibin<nbin; ibin++)
+      weights[ibin] = hits_out[ibin];
+  }
+  else if (not_finite)
   {
     if (verbose > 2)
       cerr << "dsp::Archiver::set Pulsar::Profile WARNING " << not_finite
@@ -873,8 +891,14 @@ try
 
     corrupted_profiles ++;
 
-    profile->set_weight(0);
+    profile_weight = 0;
   }
+  else if (phase->get_zeroed_data())
+  {
+    profile_weight = (float) hits_sum / (float) phase->get_ndat_total();
+  }
+
+  profile->set_weight (profile_weight);
 
   if (zeroes)
   {
@@ -902,12 +926,6 @@ try
       if (hits[ibin] == 0)
         into[ibin] = mean;
   }
-  if (phase->get_zeroed_data())
-  {
-    float chan_weight = (float) hits_sum / (float) phase->get_ndat_total();
-    profile->set_weight (chan_weight);
-  }
-
 }
 catch (Error& error)
 {
