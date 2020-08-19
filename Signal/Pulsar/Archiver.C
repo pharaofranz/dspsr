@@ -31,6 +31,7 @@
 #include "Pulsar/Backend.h"
 
 #include "Pulsar/FITSHdrExtension.h"
+#include "Pulsar/BinWeightsManager.h"
 
 #include "Pulsar/Predictor.h"
 #include "Error.h"
@@ -58,6 +59,7 @@ dsp::Archiver::Archiver ()
   subints_per_file = 0;
   use_single_archive = false;
   force_archive_class = false;
+  bin_weights = false;
 
   /* PLEASE DON'T FORGET TO ALSO UPDATE THE COPY CONSTRUCTOR */
 }
@@ -83,6 +85,7 @@ dsp::Archiver::Archiver (const Archiver& copy)
   fourth_moments = copy.fourth_moments;
   subints_per_file = copy.subints_per_file;
   use_single_archive = copy.use_single_archive;
+  bin_weights = copy.bin_weights;
 
   profiles = 0;
 }
@@ -659,6 +662,9 @@ try
          << " epoch=" << integration->get_epoch().printdays(13)
          << " duration=" << integration->get_duration()
          << " period=" << integration->get_folding_period() << endl;
+
+  if (bin_weights)
+    integration->add_extension( new Pulsar::BinWeightsManager );
 
   for (unsigned ichan=0; ichan<nchan; ichan++)
   {

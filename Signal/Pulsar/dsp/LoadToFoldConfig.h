@@ -150,6 +150,9 @@ namespace dsp {
     // fold the spectral kurtosis filterbank output
     bool sk_fold;
 
+    // output phase-resolved weights
+    bool bin_weights;
+
     unsigned npol;
     unsigned nbin;
     unsigned ndim;

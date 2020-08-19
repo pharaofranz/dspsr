@@ -332,6 +332,9 @@ void parse_options (int argc, char** argv) try
   arg = menu.add (config->sk_fold, "sk_fold");
   arg->set_help ("fold the SKFilterbank output");
 
+  arg = menu.add (config->bin_weights, "phwt");
+  arg->set_help ("output phase-resolved weights");
+
   /* ***********************************************************************
 
   Dispersion removal Options

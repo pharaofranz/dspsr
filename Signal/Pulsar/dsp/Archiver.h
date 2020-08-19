@@ -103,6 +103,9 @@ namespace dsp
     
     bool get_archive_dedispersed() const
     { return archive_dedispersed; }
+
+    void output_bin_weights (bool _bin_weights)
+    { bin_weights = _bin_weights; }
  
     //! A dspReduction extension is added to the archive with this string
     void set_archive_software(std::string _archive_software)
@@ -207,6 +210,9 @@ namespace dsp
 
     //! String to go in the dspReduction Extension of output archive
     std::string archive_software;
+
+    //! Output phase-resolved weights extensions
+    bool bin_weights;
 
     //! Used only internally
     Reference::To<const PhaseSeries> profiles;

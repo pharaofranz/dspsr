@@ -1478,6 +1478,8 @@ void dsp::LoadToFold::prepare_archiver( Archiver* archiver )
   if (sample_delay)
     archiver->set_archive_dedispersed (true);
 
+  archiver->output_bin_weights (config->bin_weights);
+
   if (config->jobs.size())
     archiver->set_script (config->jobs);
 

@@ -103,6 +103,9 @@ dsp::LoadToFold::Config::Config ()
   // by default, do not fold the SK filterbank output
   sk_fold = false;
 
+  // by default, do not store phase-resolved weights in output Archives
+  bin_weights = false;
+
   // full polarization by default
   npol = 4;
 
