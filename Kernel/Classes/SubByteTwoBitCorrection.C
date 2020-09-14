@@ -8,7 +8,9 @@
 #include "dsp/SubByteTwoBitCorrection.h"
 #include "dsp/excision_unpack.h"
 #include "dsp/StepIterator.h"
+
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -25,27 +27,39 @@ dsp::SubByteTwoBitCorrection::~SubByteTwoBitCorrection ()
 
 /*! By default, both polarizations are output in one byte */
 unsigned dsp::SubByteTwoBitCorrection::get_ndig_per_byte () const
-{ 
-  return 2;
+{
+  unsigned max_ndig = 4;
+  return std::min (get_ndig(), max_ndig);
 }
 
 /*! By default, the data is not interleaved byte by byte */
 unsigned dsp::SubByteTwoBitCorrection::get_input_offset (unsigned idig) const
 {
-  return 0;
+  return idig / get_ndig_per_byte ();
 }
 
 /*! By default, the data is not interleaved byte by byte */
 unsigned dsp::SubByteTwoBitCorrection::get_input_incr () const 
 {
-  return 1;
+  return get_ndig() / get_ndig_per_byte ();
 }
 
 /*! By default, MSB y1 x1 y0 x0 LSB */
 unsigned
-dsp::SubByteTwoBitCorrection::get_shift (unsigned idig, unsigned samp) const
+dsp::SubByteTwoBitCorrection::get_shift (unsigned idig, unsigned isamp) const
 {
-  return (idig + samp * 2) * 2;
+#if _DEBUG
+  cerr << "dsp::SubByteTwoBitCorrection::get_shift idig=" << idig;
+#endif
+
+  unsigned shift = (idig % get_ndig_per_byte () + isamp * 2) * 2;
+
+#if _DEBUG
+  cerr << " isamp=" << isamp << " shift=" << shift << endl;
+#endif
+
+  assert (shift < 7);
+  return shift;
 }
 
 /* By default, there may be one time sample from each of two or four
@@ -64,10 +78,14 @@ void dsp::SubByteTwoBitCorrection::dig_unpack (const unsigned char* input_data,
 
   const unsigned ndig_per_byte = get_ndig_per_byte();
 
+#if ! _DEBUG
   if (verbose)
-    cerr << "dsp::SubByteTwoBitCorrection::dig_unpack input_data=" 
-         << (void*) input_data << " input_incr=" << get_input_incr() 
-         << " ndig_per_byte=" << ndig_per_byte << endl;
+#endif
+    cerr << "dsp::SubByteTwoBitCorrection::dig_unpack"
+            " input_data=" << (void*) input_data <<
+            " input_incr=" << get_input_incr() << 
+            " ndig_per_byte=" << ndig_per_byte << endl <<
+            " nfloat=" << nfloat << " nweight=" << nweights << endl;
 
   if (ndig_per_byte == 2)
   {
@@ -108,5 +126,64 @@ dsp::TwoBitLookup* dsp::SubByteTwoBitCorrection::get_unpacker ()
 		 "invalid number of digitizers per byte: %u",
 		 get_ndig_per_byte());
   }
+}
+
+static unsigned mask_lsb = 1;
+
+unsigned dsp::SubByteTwoBitCorrection::get_output_ipol (unsigned idig) const
+{
+#if _DEBUG
+  cerr << "dsp::SubByteTwoBitCorrection::get_output_ipol idig=" << idig;
+#endif
+
+  if (input->get_npol() == 1)
+    return 0;
+  
+  if (input->get_ndim() > 1)
+    idig = idig >> 1;
+
+#if _DEBUG
+  cerr << " ipol=" << (idig & mask_lsb) << endl;
+#endif
+ 
+  return idig & mask_lsb;
+}
+
+unsigned dsp::SubByteTwoBitCorrection::get_output_ichan (unsigned idig) const
+{
+#if _DEBUG
+  cerr << "dsp::SubByteTwoBitCorrection::get_output_ichan idig=" << idig;
+#endif
+
+  if (input->get_nchan() == 1)
+    return 0;
+
+  if (input->get_ndim() > 1)
+    idig = idig >> 1;
+
+  if (input->get_npol() > 1)
+    idig = idig >> 1;
+
+#if _DEBUG
+  cerr << " ichan=" << idig << endl;
+#endif
+
+  return idig;
+}
+
+
+/*! The quadrature components must be offset by one */
+unsigned dsp::SubByteTwoBitCorrection::get_output_offset (unsigned idig) const
+{
+  if (input->get_ndim() == 1)
+    return 0;
+  else
+    return idig & mask_lsb;
+}
+
+/*! The in-phase and quadrature components must be interleaved */
+unsigned dsp::SubByteTwoBitCorrection::get_output_incr () const
+{
+  return input->get_ndim();
 }
 

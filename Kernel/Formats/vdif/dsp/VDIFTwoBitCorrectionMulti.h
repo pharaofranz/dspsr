@@ -24,6 +24,8 @@ namespace dsp {
     //! Return true if VDIFTwoBitCorrection can convert the Observation
     virtual bool matches (const Observation* observation);
 
+    void unpack ();
+
   };
   
 }

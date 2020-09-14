@@ -5,8 +5,6 @@
  *
  ***************************************************************************/
 
-using namespace std;
-
 #include "dsp/VDIFFile.h"
 #include "dsp/ASCIIObservation.h"
 #include "vdifio.h"
@@ -26,6 +24,8 @@ using namespace std;
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+
+using namespace std;
 
 dsp::VDIFFile::VDIFFile (const char* filename,const char* headername)
   : BlockFile ("VDIF")
@@ -127,8 +127,14 @@ void dsp::VDIFFile::open_file (const char* filename)
 
   // Get the data file
   if (ascii_header_get (header, "DATAFILE", "%s", datafile) < 0)
-    throw Error (InvalidParam, "dsp::VDIFFile::open_file", 
-        "Missing DATAFILE keyword");
+  {
+    strncpy (datafile, filename, VDIF_MAX_FILENAME_LENGTH);
+    char* ext = strstr (datafile, ".hdr");
+    if (!ext)
+      throw Error (InvalidParam, "dsp::VDIFFile::open_file",
+                   "no DATAFILE and no .hdr to strip");
+    *ext = '\0';
+  }
 
   // Parse the standard ASCII info.  Timestamps are in VDIF packets
   // so not required.  Also we'll assume VDIF's "nchan" really gives
@@ -140,16 +146,14 @@ void dsp::VDIFFile::open_file (const char* filename)
 
   info_tmp->set_required("UTC_START", false);
   info_tmp->set_required("OBS_OFFSET", false);
-  info_tmp->set_required("NPOL", false);
   info_tmp->set_required("NBIT", false);
   info_tmp->set_required("NDIM", false);
-  info_tmp->set_required("NCHAN", false);
   info_tmp->set_required("TSAMP", false);
   info_tmp->load(header);
 
   fd = ::open(datafile, O_RDONLY);
   if (fd<0) 
-      throw Error (FailedSys, "dsp::VDIFFile::open_file",
+    throw Error (FailedSys, "dsp::VDIFFile::open_file",
               "open(%s) failed", datafile);
 	
   // Read until we get a valid frame
@@ -213,18 +217,19 @@ void dsp::VDIFFile::open_file (const char* filename)
   // could also be different freq channels...
   int vdif_nchan = getVDIFNumChannels(rawhdr);
   if (verbose) cerr << "VDIFFile::open_file NCHAN = " << vdif_nchan << endl;
-  if ((vdif_nchan<0) || (vdif_nchan>2))
-    throw Error (InvalidParam, "dsp::VDIFFile::open_file",
-        "Read vdif_nchan=%d, this is currently not supported", vdif_nchan);
-  get_info()->set_npol( vdif_nchan );
-  get_info()->set_nchan( 1 );
+
+  int expected_nchan = get_info()->get_npol() * get_info()->get_nchan();
+  if (vdif_nchan != expected_nchan)
+    throw Error (InvalidState, "dsp::VDIFFile::open_file",
+                 "vdif_nchan=%d != expected=%d (npol=%d * nchan=%d)",
+                 vdif_nchan, expected_nchan, get_info()->get_npol(), get_info()->get_nchan());
+
   get_info()->set_rate( fabs((double) get_info()->get_bandwidth()) * 1e6 
       / (double) get_info()->get_nchan() 
       * (get_info()->get_state() == Signal::Nyquist ? 2.0 : 1.0));
   if (verbose) cerr << "VDIFFile::open_file rate = " << get_info()->get_rate() << endl;
 
   // Figure frames per sec from bw, pkt size, etc
-  //double frames_per_sec = 64000.0;
   int frame_data_size = nbyte - block_header_bytes;
   double frames_per_sec = get_info()->get_nbit() * get_info()->get_nchan() * get_info()->get_npol()
     * get_info()->get_rate() / 8.0 / (double) frame_data_size;
@@ -245,33 +250,9 @@ void dsp::VDIFFile::open_file (const char* filename)
   if (verbose) cerr << "VDIFFile::open_file fn  = " << fn << endl;
   get_info()->set_start_time( MJD(mjd,sec,(double)fn/frames_per_sec) );
 
-  // XXX old code, should all be handled by ASCII header now
-  //float mbps = 512 * get_info()->get_npol();
-  //get_info()->set_state (Signal::Nyquist);
-  //get_info()->set_rate ( 1e6 * mbps / get_info()->get_npol() / get_info()->get_nchan() / nbit );
-  //get_info()->set_bandwidth ( 1.0 * mbps / get_info()->get_npol() / nbit / 2 );
-  //get_info()->set_telescope ("vla");
-  //get_info()->set_source (hdrstr);
-  //get_info()->set_coordinates(coords);
-  //get_info()->set_centre_frequency (1658.0 + 8.0);
-  //get_info()->set_centre_frequency (1458.0);
-	  
   // Figures out how much data is in file based on header sizes, etc.
   set_total_samples();
-
 }
-
-//int64_t dsp::VDIFFile::seek_bytes (uint64_t nbytes)
-//{
-//  if (verbose)
-//    cerr << "VDIFFile::seek_bytes nbytes=" << nbytes << endl;
-//
-//  if (nbytes != 0)
-//    throw Error (InvalidState, "VDIFFile::seek_bytes", "unsupported");
-//
-//  return nbytes;
-//}
-
 
 void dsp::VDIFFile::reopen ()
 {

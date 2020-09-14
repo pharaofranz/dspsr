@@ -45,7 +45,9 @@ namespace dsp {
 
     uint64_t reopen_seek;
 
-    char datafile[256];
+#define VDIF_MAX_FILENAME_LENGTH 256
+
+    char datafile[VDIF_MAX_FILENAME_LENGTH];
 
   };
 

@@ -19,18 +19,13 @@ dsp::VDIFTwoBitCorrectionMulti::VDIFTwoBitCorrectionMulti ()
   : SubByteTwoBitCorrection ("VDIFTwoBitCorrectionMulti")
 {
   table = new TwoBitTable (TwoBitTable::OffsetBinary);
-  set_ndig(2);
 }
 
-#if 0 
-unsigned
-dsp::VDIFTwoBitCorrectionMulti::get_shift (unsigned idig, unsigned isamp) const
+void dsp::VDIFTwoBitCorrectionMulti::unpack ()
 {
-  unsigned shift[4] = { 4, 6, 0, 2 };
+  if (get_ndig() != input->get_nchan() * input->get_npol())
+    set_ndig(input->get_nchan() * input->get_npol());
 
-  assert (isamp < 2);
-  assert (idig < 2);
-
-  return shift[idig];
+  SubByteTwoBitCorrection::unpack ();
 }
-#endif
+

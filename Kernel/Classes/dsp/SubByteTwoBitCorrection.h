@@ -43,6 +43,11 @@ namespace dsp {
     //! Return the bit shift for the given digitizer and the given sample
     virtual unsigned get_shift (unsigned idig, unsigned isamp) const;
 
+    unsigned get_output_ipol (unsigned idig) const;
+    unsigned get_output_ichan (unsigned idig) const;
+    unsigned get_output_offset (unsigned idig) const;
+    unsigned get_output_incr () const;
+
   protected:
 
     //! Default unpacking algorithm

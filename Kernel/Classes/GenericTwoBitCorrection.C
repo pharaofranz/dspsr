@@ -1,6 +1,6 @@
 /***************************************************************************
  *
- *   Copyright (C) 2018 Willem van Straten and Natalia Primak
+ *   Copyright (C) 2018 Willem van Straten
  *   Licensed under the Academic Free License version 2.1
  *
  ***************************************************************************/
@@ -31,7 +31,7 @@ unsigned dsp::GenericTwoBitCorrection::get_output_ipol (unsigned idig) const
   if (input->get_ndim() > 1)
     idig = idig >> 1;
   
-  return idig && mask_lsb;
+  return idig & mask_lsb;
 }
 
 unsigned dsp::GenericTwoBitCorrection::get_output_ichan (unsigned idig) const
@@ -64,7 +64,7 @@ unsigned dsp::GenericTwoBitCorrection::get_output_offset (unsigned idig) const
   if (input->get_ndim() == 1)
     return 0;
   else
-    return idig && mask_lsb;
+    return idig & mask_lsb;
 }
 
 /*! The in-phase and quadrature components must be interleaved */
