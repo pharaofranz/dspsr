@@ -66,6 +66,9 @@ namespace dsp {
     //! Plot the two polarizations beside eachother
     bool horizontal;
 
+    //! Plot in colour
+    bool colour;
+
     //! Plot two polarizations in the current viewport
     void plot ();
 
