@@ -36,7 +36,7 @@ void usage()
        << endl;
 }
 
-void report_dc_centred_impact (dsp::Dedispersion&);
+void report_dc_centred_impact (dsp::Dedispersion*);
 bool verbose = false;
 
 int main(int argc, char ** argv) try
@@ -105,16 +105,16 @@ int main(int argc, char ** argv) try
       cerr << "invalid param '" << c << "'" << endl;
     }
 
-  dsp::Dedispersion kernel;
+  Reference::To<dsp::Dedispersion> kernel = new dsp::Dedispersion;
 
-  kernel.set_centre_frequency (centrefreq);
-  kernel.set_bandwidth (bw);
-  kernel.set_dispersion_measure (dm);
+  kernel->set_centre_frequency (centrefreq);
+  kernel->set_bandwidth (bw);
+  kernel->set_dispersion_measure (dm);
 
-  kernel.set_nchan (nchan);
+  kernel->set_nchan (nchan);
 
   if (set_nfft)
-    kernel.set_frequency_resolution (set_nfft);
+    kernel->set_frequency_resolution (set_nfft);
 
   if (dc_centred_report)
   {
@@ -123,7 +123,7 @@ int main(int argc, char ** argv) try
   }
 
   /* micro seconds */
-  float smear_us = kernel.get_smearing_time () * 1e6;
+  float smear_us = kernel->get_smearing_time () * 1e6;
 
   if (quiet)
   {
@@ -132,28 +132,28 @@ int main(int argc, char ** argv) try
   }
 
   cout << "\nInput Parameters:\n"
-    "Centre Frequency:   " << kernel.get_centre_frequency() << " MHz\n"
-    "Bandwidth:          " << kernel.get_bandwidth() << " MHz\n"
-    "Dispersion Measure: " << kernel.get_dispersion_measure() << " pc/cm^3\n";
+    "Centre Frequency:   " << kernel->get_centre_frequency() << " MHz\n"
+    "Bandwidth:          " << kernel->get_bandwidth() << " MHz\n"
+    "Dispersion Measure: " << kernel->get_dispersion_measure() << " pc/cm^3\n";
 
   if (nchan > 1)
     cout <<
-      "Sub-bands:          " << kernel.get_nchan() << endl;
+      "Sub-bands:          " << kernel->get_nchan() << endl;
   
   cout << "\nOutput parameters:\n"
-    "Dispersion delay:   " << kernel.delay_time() << " s (wrt lambda=0)\n"
+    "Dispersion delay:   " << kernel->PlasmaResponse::delay_time() << " s (wrt lambda=0)\n"
     "Smearing time:      " << smear_us << " us (across band)\n";
 
   if (nchan > 1)
   {
-    smear_us = kernel.get_effective_smearing_time () * 1e6;
+    smear_us = kernel->get_effective_smearing_time () * 1e6;
     cout << "Effective Smearing: " << smear_us << " us\n";
   }
 
-  kernel.prepare();
+  kernel->PlasmaResponse::prepare();
 
-  unsigned nfilt = kernel.get_impulse_pos() + kernel.get_impulse_neg();
-  unsigned nfft = kernel.get_minimum_ndat ();
+  unsigned nfilt = kernel->get_impulse_pos() + kernel->get_impulse_neg();
+  unsigned nfft = kernel->get_minimum_ndat ();
 
   cout <<
     "\n"
@@ -162,9 +162,9 @@ int main(int argc, char ** argv) try
        << " (" << float(nfilt)/float(nfft)*100.0 << "% wrap)" << endl;
 
   if (!set_nfft)
-    kernel.set_optimal_ndat();
+    kernel->set_optimal_ndat();
 
-  nfft = kernel.get_ndat ();
+  nfft = kernel->get_ndat ();
 
   if (set_nfft)
     cout << "Specified kernel length: " << nfft;
@@ -200,40 +200,40 @@ catch (Error& error)
  * It was discovered that CPSR2 and PuMa2 file readers were setting the
  * dc_centred attribute to true by default.  This experimental parameter
  * probably should never have been introduced.  It shifts the frequencies
- * by half a channel width when creating a filterbank dispersion kernel.
+ * by half a channel width when creating a filterbank dispersion kernel->
  * In most cases, this is not right.
  *
  */
 
-void report_dc_centred_impact (dsp::Dedispersion& kernel)
+void report_dc_centred_impact (dsp::Dedispersion* kernel)
 {
-  if (kernel.get_nchan () < 2)
+  if (kernel->get_nchan () < 2)
   {
     cerr << "dc_centred bug impacts only filterbank mode (use -n <nchan>)"
 	 << endl;
     return;
   }
 
-  kernel.prepare ();
-  kernel.build ();
-  kernel.set_build_delays ();
+  kernel->PlasmaResponse::prepare ();
+  kernel->PlasmaResponse::build ();
+  kernel->set_build_delays ();
 
-  unsigned ndat = kernel.get_ndat();
-  unsigned nchan = kernel.get_nchan();
+  unsigned ndat = kernel->get_ndat();
+  unsigned nchan = kernel->get_nchan();
 
-  kernel.set_dc_centred (false);
+  kernel->set_dc_centred (false);
   vector<float> delays0;
-  kernel.build (delays0, ndat, nchan);
+  kernel->build (delays0, ndat, nchan);
 
-  kernel.set_dc_centred (true);
+  kernel->set_dc_centred (true);
   vector<float> delays1;
-  kernel.build (delays1, ndat, nchan);
+  kernel->build (delays1, ndat, nchan);
 
   assert (delays0.size() == delays1.size());
   assert (delays0.size() == ndat * nchan);
 
   unsigned lowest_cfreq_chan = 0;
-  if (kernel.get_bandwidth() < 0.0)
+  if (kernel->get_bandwidth() < 0.0)
     lowest_cfreq_chan = nchan - 1;
 
   unsigned offset = lowest_cfreq_chan * ndat;

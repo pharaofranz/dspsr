@@ -5,7 +5,6 @@
  *
  ***************************************************************************/
 
-
 #include "dsp/PolnCalibration.h"
 #include <iostream>
 #include <unistd.h>
@@ -92,39 +91,28 @@ public:
 
 dsp::PolnCalibration::PolnCalibration ()
 {
+  type = new Pulsar::CalibratorTypes::SingleAxis;
 }
 
 void dsp::PolnCalibration::match (const Observation* input, unsigned channels)
 {
+  Reference::To<Pulsar::Archive> archive = new StubArchive;
 
-    Reference::To<Pulsar::Archive> archive = new StubArchive;
+  cpy_attributes (input , archive);
 
-    cpy_attributes (input , archive);
+  Reference::To<Pulsar::Database> dbase;
+  dbase = new Pulsar::Database (database_filename);
 
-    // unsigned nchan = 128;
+  // Pulsar::Database::Criterion::match_verbose = true;
+  // Pulsar::PolnCalibrator::verbose = true;
+  // Pulsar::Database::verbose = true;
 
-    // 1 sub-integration, 4 polarizations, ndat channels
-    // archive->resize (1, 4, ndat);
+  // default searching criterion
+  Pulsar::Database::Criteria criteria;
+  criteria.check_coordinates = false;
+  Pulsar::Database::set_default_criteria (criteria);
 
-    // the following line is equivalent to
-    // Pulsar::Database* dbase = 0;
-    Reference::To<Pulsar::Database> dbase;
-
-    dbase = new Pulsar::Database (database_filename);
-
-    // Pulsar::Database::Criterion::match_verbose = true;
-    // Pulsar::PolnCalibrator::verbose = true;
-    // Pulsar::Database::verbose = true;
-
-    // default searching criterion
-    Pulsar::Database::Criteria criteria;
-    criteria.check_coordinates = false;
-    Pulsar::Database::set_default_criteria (criteria);
-
-    type = new Pulsar::CalibratorTypes::SingleAxis;
-
-
-    pcal = dbase->generatePolnCalibrator (archive , type);
+  pcal = dbase->generatePolnCalibrator (archive , type);
 }
 
 void dsp::PolnCalibration::match (const Response* boss)
@@ -151,5 +139,5 @@ void dsp::PolnCalibration::match (const Response* boss)
     cerr << "dsp::PolnCalibration::match resize" <<endl;
 
   resize (1, boss->get_nchan(), boss->get_ndat(), 8);
-
 }
+
