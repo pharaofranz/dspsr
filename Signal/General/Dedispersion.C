@@ -33,6 +33,7 @@ dsp::Dedispersion::Dedispersion ()
   dispersion_measure = 0.0;
   fractional_delay = false;
   build_delays = false;
+  build_setup_delay = 0.0;
 }
 
 //! Set the dispersion measure in \f${\rm pc\,cm}^{-3}\f$
@@ -80,6 +81,11 @@ void dsp::Dedispersion::build (unsigned ndat, unsigned nchan)
   phasors[0] = 0;
 }
 
+void dsp::Dedispersion::build (std::vector<float>& phases, unsigned npts, unsigned nchan)
+{
+  PlasmaResponse::build (phases, "dispersion", dispersion_measure, this, ndat, nchan);
+}
+
 /*!
   return x squared
   */
@@ -91,85 +97,53 @@ double dsp::Dedispersion::delay_time (double freq) const
   return dispersion * 1.0/sqr(freq);
 }
 
-void dsp::Dedispersion::build (vector<float>& phases,
-			       unsigned _ndat, unsigned _nchan)
+void dsp::Dedispersion::build_setup (double chan_freq)
 {
-  if (verbose)
-    cerr << "dsp::Dedispersion::build"
-      "\n  centre frequency = " << get_centre_frequency() <<
-      "\n  bandwidth = " << get_bandwidth() <<
-      "\n  dispersion measure = " << dispersion_measure <<
-      "\n  Doppler shift = " << get_Doppler_shift() <<
-      "\n  ndat = " << ndat <<
-      "\n  nchan = " << _nchan <<
-      "\n  centred on DC = " << dc_centred <<
-      "\n  fractional delay compensation = " << fractional_delay << endl;
+  if (!fractional_delay)
+  {
+    build_setup_delay = 0.0;
+    return;
+  }
 
   double doppler = get_Doppler_shift();
   double centrefreq = get_centre_frequency() / doppler;
   double bw = get_bandwidth() / doppler;
 
-  double sign = bw / fabs (bw);
-  double chanwidth = bw / double(_nchan);
-  double binwidth = chanwidth / double(_ndat);
-
-  double lower_cfreq = centrefreq - 0.5*bw;
-  if (!dc_centred)
-    lower_cfreq += 0.5*chanwidth;
-
+  double chanwidth = bw / double(nchan);
   double highest_freq = centrefreq + 0.5*fabs(bw-chanwidth);
 
   double samp_int = 1.0/chanwidth; // sampint in microseconds, for
                                    // quadrature nyquist data eg fb.
-  double delay = 0.0;
 
   // when divided by MHz, yields a dimensionless value
   double dispersion_per_MHz = 1e6 * dispersion_measure / dm_dispersion;
 
-  phases.resize (_ndat * _nchan);
+  // Compute the DM delay in microseconds; when multiplied by the
+  // frequency in MHz, the powers of ten cancel each other
+  build_setup_delay = dispersion_per_MHz * ( 1.0/sqr(chan_freq) -
+				             1.0/sqr(highest_freq) );
+  // Modulo one sample and invert it
+  build_setup_delay = - fmod(build_setup_delay, samp_int);
+}
 
-  frequency_output.resize( _nchan );
-  bandwidth_output.resize( _nchan );
+double dsp::Dedispersion::build_compute (double chan_freq, double freq)
+{
+  double bw = get_bandwidth();
+  double sign = bw / fabs (bw);
 
-  for (unsigned ichan = 0; ichan < _nchan; ichan++)
-  {
-    double chan_cfreq = lower_cfreq + double(ichan) * chanwidth;
+  double dispersion_per_MHz = 1e6 * dispersion_measure / dm_dispersion;
 
-    frequency_output[ichan] = chan_cfreq;
-    bandwidth_output[ichan] = chanwidth;
+  double coeff = -sign * 2*M_PI * dispersion_per_MHz / sqr(chan_freq);
 
-    if (fractional_delay)
-    {
-      // Compute the DM delay in microseconds; when multiplied by the
-      // frequency in MHz, the powers of ten cancel each other
-      delay = dispersion_per_MHz * ( 1.0/sqr(chan_cfreq) -
-				     1.0/sqr(highest_freq) );
-      // Modulo one sample and invert it
-      delay = - fmod(delay, samp_int);
-    }
+  // additional phase turn for fractional dispersion delay shift
+  double delay_phase = -2.0*M_PI * freq * build_setup_delay;
 
-    double coeff = -sign * 2*M_PI * dispersion_per_MHz / sqr(chan_cfreq);
+  double result = coeff*sqr(freq)/(chan_freq+freq) + delay_phase;
 
-    unsigned spt = ichan * _ndat;
-    for (unsigned ipt = 0; ipt < _ndat; ipt++)
-    {
-      // frequency offset from centre frequency of channel
-      double freq = double(ipt)*binwidth - 0.5*chanwidth;
+  if (build_delays && freq != 0.0)
+    result /= (2.0*M_PI * freq);
 
-      // additional phase turn for fractional dispersion delay shift
-      double delay_phase = -2.0*M_PI * freq * delay;
-
-      phases[spt+ipt] = coeff*sqr(freq)/(chan_cfreq+freq) + delay_phase;
-
-      if (build_delays && freq != 0.0)
-	phases[spt+ipt] /= (2.0*M_PI * freq);
-
-#ifdef _DEBUG
-      cerr << ichan*_ndat + ipt << " " << chan_cfreq+freq << " "
-	   << phases[spt+ipt] << endl;
-#endif
-    }
-  }
+  return result;
 }
 
 //! Build delays in microseconds instead of phases
@@ -177,3 +151,4 @@ void dsp::Dedispersion::set_build_delays (bool delays)
 {
   build_delays = delays;
 }
+

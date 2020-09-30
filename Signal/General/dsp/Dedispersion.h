@@ -71,6 +71,15 @@ namespace dsp {
 
     void build (unsigned ndat, unsigned nchan);
 
+    friend class PlasmaResponse;
+
+    //! Set up for the specified channel
+    void build_setup (double chan_freq);
+    double build_setup_delay;
+
+    //! Return the phase of the kernel response 
+    double build_compute (double chan_freq, double freq);
+
     //! Supported frequency channels
     /*! Set to false when the dispersive smearing is too large */
     std::vector<bool> supported_channels;

@@ -120,10 +120,17 @@ namespace dsp {
     std::vector<double> frequency_output;
     std::vector<double> bandwidth_output;
 
-  private:
+  protected:
 
     //! Construction of filter defined in derived classes
     virtual void build (unsigned ndat, unsigned nchan) = 0;
+
+    //! Worker function to help in derived classes
+    template<typename T, typename C>
+    void build (std::vector<T>& response, const char* name, double measure, C* child,
+                unsigned _ndat, unsigned _nchan);
+
+  private:
 
     //! Centre frequency of the band-limited signal in MHz
     double centre_frequency;
@@ -159,6 +166,58 @@ namespace dsp {
     Rational oversampling_factor;
   };
 
+}
+
+template<typename T, typename C>
+void dsp::PlasmaResponse::build (std::vector<T>& response, 
+                                 const char* name, double measure, C* child,
+                                 unsigned _ndat, unsigned _nchan)
+{
+  if (verbose)
+    cerr << "dsp::PlasmaResponse::build"
+      "\n  centre frequency = " << get_centre_frequency() <<
+      "\n  bandwidth = " << get_bandwidth() <<
+      "\n  " << name << " measure = " << measure <<
+      "\n  Doppler shift = " << get_Doppler_shift() <<
+      "\n  ndat = " << ndat <<
+      "\n  nchan = " << _nchan <<
+      "\n  centred on DC = " << dc_centred << std::endl;
+
+  double doppler = get_Doppler_shift();
+  double centrefreq = get_centre_frequency() / doppler;
+  double bw = get_bandwidth() / doppler;
+
+  double sign = bw / fabs (bw);
+  double chanwidth = bw / double(_nchan);
+  double binwidth = chanwidth / double(_ndat);
+
+  double lower_cfreq = centrefreq - 0.5*bw;
+  if (!dc_centred)
+    lower_cfreq += 0.5*chanwidth;
+
+  response.resize (_ndat * _nchan);
+
+  frequency_output.resize( _nchan );
+  bandwidth_output.resize( _nchan );
+
+  for (unsigned ichan = 0; ichan < _nchan; ichan++)
+  {
+    double chan_cfreq = lower_cfreq + double(ichan) * chanwidth;
+
+    frequency_output[ichan] = chan_cfreq;
+    bandwidth_output[ichan] = chanwidth;
+
+    child->build_setup (chan_cfreq);
+
+    unsigned spt = ichan * _ndat;
+    for (unsigned ipt = 0; ipt < _ndat; ipt++)
+    {
+      // frequency offset from centre frequency of channel
+      double freq = double(ipt)*binwidth - 0.5*chanwidth;
+
+      response[spt+ipt] = child->build_compute (chan_cfreq, freq);
+    }
+  }
 }
 
 #endif
