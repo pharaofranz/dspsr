@@ -994,7 +994,7 @@ void dsp::LoadToFold::prepare ()
   bool report_vitals = thread_id==0 && config->report_vitals;
 
   if (kernel && report_vitals)
-    cerr << "dspsr: dedispersion filter length=" << kernel->get_ndat ()
+    cerr << "dspsr: filter length=" << kernel->get_ndat ()
          << " (minimum=" << kernel->get_minimum_ndat () << ")"
          << " complex samples" << endl;
 
@@ -1005,9 +1005,9 @@ void dsp::LoadToFold::prepare ()
     {
       cerr << "dspsr: " << config->filterbank.get_nchan() << " channel ";
 
-      if (config->coherent_dedispersion &&
+      if ((config->coherent_dedispersion || config->coherent_debirefraction) &&
 	  config->filterbank.get_convolve_when() == Filterbank::Config::During)
-	cerr << "dedispersing ";
+	cerr << "convolving ";
       else if (filterbank->get_freq_res() > 1)
         cerr << "by " << filterbank->get_freq_res() << " back ";
 
