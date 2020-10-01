@@ -102,6 +102,7 @@ void dsp::Filterbank::make_preparations ()
     // filterbank construction...
 
     response -> match (input, nchan);
+
     if (response->get_nchan() != nchan)
       throw Error (InvalidState, "dsp::Filterbank::make_preparations",
                    "response nchan=%d != output nchan=%d",

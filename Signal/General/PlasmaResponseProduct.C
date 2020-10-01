@@ -22,12 +22,15 @@ dsp::PlasmaResponseProduct::~PlasmaResponseProduct ()
 void dsp::PlasmaResponseProduct::prepare (const Observation* obs, unsigned nchan)
 {
   if (verbose)
-    cerr << "dsp::PlasmaResponseProduct::prepare (const Observation*, unsigned nchan)" << endl;
+    cerr << "dsp::PlasmaResponseProduct::prepare nchan=" << nchan 
+         << " nresp=" << response.size() << endl;
 
   for (unsigned iresp=0; iresp < response.size(); iresp++)
   {
     response[iresp]->prepare (obs, nchan);
   }
+
+  PlasmaResponse::prepare (obs, nchan);
 }
 
 double dsp::PlasmaResponseProduct::delay_time (double freq) const
@@ -36,6 +39,10 @@ double dsp::PlasmaResponseProduct::delay_time (double freq) const
   
   for (unsigned iresp=0; iresp < response.size(); iresp++)
     time += response[iresp]->delay_time (freq);
+
+  if (verbose)
+    cerr << "dsp::PlasmaResponseProduct::delay_time freq=" << freq
+         << " nresp=" << response.size() << " time=" << time << endl;
 
   return time;
 }
@@ -60,24 +67,34 @@ using namespace std;
 void dsp::PlasmaResponseProduct::build (unsigned _ndat, unsigned _nchan)
 {
   if (verbose)
-    cerr << "dsp::PlasmaResponseProduct::build" << endl;
+    cerr << "dsp::PlasmaResponseProduct::build nchan=" << _nchan 
+         << " nfilt=" << _ndat << endl;
 
   for (unsigned iresp=0; iresp < response.size(); iresp++)
   {
+    if (verbose)
+      cerr << "dsp::PlasmaResponseProduct::build iresp=" << iresp << endl;
     response[iresp]->build (_ndat, _nchan);
   }
-  
+
+  if (verbose)
+    cerr << "dsp::PlasmaResponseProduct::build copy response[0]->nchan=" 
+         << response[0]->get_nchan() << " nfilt=" << response[0]->get_ndat() << endl;
+
   Response::operator = (*response[0]);
 
   if (verbose)
-    cerr << "dsp::PlasmaResponseProduct::build ndat=" << ndat
-         << " nchan=" << nchan << endl;
+    cerr << "dsp::PlasmaResponseProduct::build nchan=" << nchan
+         << " nfilt=" << ndat << endl;
 
   for (unsigned iresp=1; iresp < response.size(); iresp++)
   {
+    if (verbose)
+      cerr << "dsp::PlasmaResponseProduct::build multiply iresp=" << iresp << endl;
     Response::operator *= (*response[iresp]);
   }
 
   if (verbose)
     cerr << "dsp::PlasmaResponseProduct::build done" << endl;
 }
+

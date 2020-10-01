@@ -40,6 +40,10 @@ double dsp::Debirefraction::get_rotation_measure () const
 
 void dsp::Debirefraction::prepare (const Observation* input, unsigned channels)
 {
+  if (verbose)
+    cerr << "dsp::Debirefraction::prepare nchan=" << channels
+       << " rm=" << input->get_rotation_measure() << endl;
+
   set_rotation_measure ( input->get_rotation_measure() );
   PlasmaResponse::prepare ( input, channels );
 }
@@ -55,16 +59,20 @@ Jones<float> dsp::Debirefraction::build_compute (double chan_freq, double freq)
   return birefringence.evaluate ();
 }
 
-void dsp::Debirefraction::build (unsigned ndat, unsigned nchan)
+void dsp::Debirefraction::build (unsigned _ndat, unsigned _nchan)
 {
-  vector< Jones<float> > response (ndat * nchan);
-  PlasmaResponse::build (response, "rotation", get_rotation_measure(), this, ndat, nchan);
+  vector< Jones<float> > response (_ndat * _nchan);
+  PlasmaResponse::build (response, "rotation", get_rotation_measure(), 
+                         this, _ndat, _nchan);
 
   // always zap DC channel
   response[0] = 0;
   
-  resize (1, nchan, ndat, 8);
   set (response);
+  resize (1, _nchan, _ndat, 8);
+
+  if (verbose)
+    cerr << "dsp::Debirefraction::build nchan=" << nchan << " nfilt=" << ndat << endl;
 }
 
 /*!

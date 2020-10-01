@@ -39,9 +39,10 @@ dsp::Dedispersion::Dedispersion ()
 //! Set the dispersion measure in \f${\rm pc\,cm}^{-3}\f$
 void dsp::Dedispersion::set_dispersion_measure (double _dispersion_measure)
 {
-  if (verbose) {
-    cerr << "dsp::Dedispersion::set_dispersion_measure " << _dispersion_measure << endl;
-  }
+  if (verbose)
+    cerr << "dsp::Dedispersion::set_dispersion_measure "
+            " dm=" << _dispersion_measure << endl;
+ 
   if (dispersion_measure != _dispersion_measure)
     set_not_built();
 
@@ -59,6 +60,10 @@ void dsp::Dedispersion::set_fractional_delay (bool _fractional_delay)
 
 void dsp::Dedispersion::prepare (const Observation* input, unsigned channels)
 {
+  if (verbose)
+    cerr << "dsp::Dedispersion::prepare nchan=" << channels 
+         << " dm=" << input->get_dispersion_measure() << endl;
+
   set_dispersion_measure ( input->get_dispersion_measure() );
   PlasmaResponse::prepare ( input, channels );
 }
@@ -79,6 +84,9 @@ void dsp::Dedispersion::build (unsigned ndat, unsigned nchan)
 
   // always zap DC channel
   phasors[0] = 0;
+
+  if (verbose)
+    cerr << "dsp::Dedispersion::build nchan=" << nchan << " nfilt=" << ndat << endl;
 }
 
 void dsp::Dedispersion::build (std::vector<float>& phases, unsigned npts, unsigned nchan)
