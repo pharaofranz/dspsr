@@ -122,6 +122,8 @@ namespace dsp {
 
   protected:
 
+    friend class PlasmaResponseProduct;
+    
     //! Construction of filter defined in derived classes
     virtual void build (unsigned ndat, unsigned nchan) = 0;
 

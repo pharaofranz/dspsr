@@ -6,10 +6,10 @@
  *
  ***************************************************************************/
 
-// dspsr/Signal/General/dsp/ResponseProduct.h
+// dspsr/Signal/General/dsp/PlasmaResponseProduct.h
 
-#ifndef __ResponseProduct_h
-#define __ResponseProduct_h
+#ifndef __PlasmaResponseProduct_h
+#define __PlasmaResponseProduct_h
 
 #include "dsp/PlasmaResponse.h"
 

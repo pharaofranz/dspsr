@@ -60,7 +60,7 @@ void dsp::Debirefraction::build (unsigned ndat, unsigned nchan)
   vector< Jones<float> > response (ndat * nchan);
   PlasmaResponse::build (response, "rotation", get_rotation_measure(), this, ndat, nchan);
 
-  resize (1, nchan, ndat, 2);
+  resize (1, nchan, ndat, 8);
   Jones<float>* J = reinterpret_cast< Jones<float>* > ( buffer );
   uint64_t npt = ndat * nchan;
 

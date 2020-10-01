@@ -562,6 +562,16 @@ void dsp::ASCIIObservation::unload (char* header)
 
   // //////////////////////////////////////////////////////////////////////
   //
+  // RM - Faraday rotation measure
+  //
+  double rm;
+  if (ascii_header_check (header, "RM", "%lf", &rm) < 0)
+    set_rotation_measure (0.0);
+  else
+    set_rotation_measure (rm);
+
+  // //////////////////////////////////////////////////////////////////////
+  //
   // MODE
   //
   string mode;

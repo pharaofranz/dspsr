@@ -30,6 +30,7 @@ nobase_include_HEADERS = dsp/ACFilterbank.h dsp/Detection.h	       \
 	dsp/InverseFilterbankEngineCPU.h \
 	dsp/InverseFilterbankResponse.h \
 	dsp/PlasmaResponse.h \
+	dsp/PlasmaResponseProduct.h \
 	dsp/Debirefraction.h
 
 libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
@@ -54,6 +55,7 @@ libdspdsp_la_SOURCES = optimize_fft.c cross_detect.c cross_detect.h  \
 	InverseFilterbankEngineCPU.C \
 	InverseFilterbankResponse.C \
 	PlasmaResponse.C \
+	PlasmaResponseProduct.C \
 	Debirefraction.C
 
 

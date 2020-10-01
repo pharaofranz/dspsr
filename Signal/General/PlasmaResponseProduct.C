@@ -30,6 +30,17 @@ void dsp::PlasmaResponseProduct::prepare (const Observation* obs, unsigned nchan
   }
 }
 
+double dsp::PlasmaResponseProduct::delay_time (double freq) const
+{
+  double time = 0.0;
+  
+  for (unsigned iresp=0; iresp < response.size(); iresp++)
+    time += response[iresp]->delay_time (freq);
+
+  return time;
+}
+
+
 //! Add a response to the product
 void dsp::PlasmaResponseProduct::add_response (PlasmaResponse* _response)
 {

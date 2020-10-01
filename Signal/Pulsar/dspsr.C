@@ -404,11 +404,17 @@ void parse_options (int argc, char** argv) try
   arg->set_help ("apply time-variable narrow-band RFI filter");
 
   arg = menu.add (config->calibrator_database_filename, "pac", "dbase");
-  arg->set_help ("pac database for phase-coherent matrix convolution");
+  arg->set_help ("calibrator database for phase-coherent matrix convolution");
   arg->set_long_help
     ("specify the name of a database created by pac from which to select\n"
      "the polarization calibrator to be used for matrix convolution");
 
+  arg = menu.add (config->coherent_debirefraction, "debiref");
+  arg->set_help ("enable phase-coherent Faraday rotation correction");
+
+  arg = menu.add (config->rotation_measure, "rm");
+  arg->set_help ("Faraday rotation measure used for coherent debirefraction");
+  
   arg = menu.add (config->use_fft_bench, "fft-bench");
   arg->set_help ("use benchmark data to choose optimal FFT length");
 

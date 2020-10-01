@@ -71,11 +71,17 @@ namespace dsp {
     // perform coherent dedispersion
     bool coherent_dedispersion;
 
+    // perform coherent debirefraction
+    bool coherent_debirefraction;
+
     // remove inter-channel dispersion delays
     bool interchan_dedispersion;
 
     // dispersion measure used in coherent dedispersion
     double dispersion_measure;
+
+    // rotation measure used in coherent debirefraction
+    double rotation_measure;
 
     // zap RFI during convolution
     bool zap_rfi;

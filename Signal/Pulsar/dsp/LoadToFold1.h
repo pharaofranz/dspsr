@@ -19,7 +19,10 @@ namespace dsp {
 
   class TimeSeries;
 
+  class PlasmaResponse;
   class Dedispersion;
+  class Debirefraction;
+
   class Convolution;
   class Detection;
   class Fold;
@@ -84,8 +87,14 @@ namespace dsp {
     //! Return true if the output will be divided into sub-integrations
     bool output_subints () const;
 
+    //! The dedispersion and/or debirefraction kernel
+    Reference::To<PlasmaResponse> kernel;
+
     //! The dedispersion kernel
-    Reference::To<Dedispersion> kernel;
+    Reference::To<Dedispersion> dedisp;
+
+    //! The debirefraction kernel
+    Reference::To<Debirefraction> debiref;
 
     //! A folding algorithm for each pulsar to be folded
     std::vector< Reference::To<Fold> > fold;

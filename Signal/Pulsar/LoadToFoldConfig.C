@@ -33,11 +33,16 @@ dsp::LoadToFold::Config::Config ()
   // perform coherent dedispersion
   coherent_dedispersion = true;
 
+  // by default, do not perform coherent debirefraction
+  coherent_debirefraction = false;
+
   // remove inter-channel dispersion delays
   interchan_dedispersion = false;
 
   // over-ride the dispersion measure from the folding ephemeris
   dispersion_measure = 0.0;
+
+  rotation_measure = 0.0;
 
   zap_rfi = false;
   use_fft_bench = false;

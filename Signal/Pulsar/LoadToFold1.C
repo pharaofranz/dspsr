@@ -20,8 +20,11 @@
 #include "dsp/ExcisionUnpacker.h"
 #include "dsp/WeightedTimeSeries.h"
 
-#include "dsp/ResponseProduct.h"
 #include "dsp/DedispersionSampleDelay.h"
+#include "dsp/Debirefraction.h"
+#include "dsp/PlasmaResponseProduct.h"
+
+#include "dsp/ResponseProduct.h"
 #include "dsp/RFIFilter.h"
 #include "dsp/PolnCalibration.h"
 
@@ -161,6 +164,12 @@ void dsp::LoadToFold::construct () try
     }
 
     config->coherent_dedispersion = false;
+
+    if (config->coherent_debirefraction)
+      throw Error (InvalidParam, "dsp::LoadToFold::construct",
+                   "cannot perform phase-coherent Faraday rotation correction\n\t"
+                   "because input signal is detected");
+
     prepare_interchan (unpacked);
     build_fold (unpacked);
     return;
@@ -177,17 +186,47 @@ void dsp::LoadToFold::construct () try
     if (report_vitals)
       cerr << "Disabling coherent dedispersion of non-pulsar signal" << endl;
     config->coherent_dedispersion = false;
+
+    if (config->coherent_debirefraction)
+      throw Error (InvalidParam, "dsp::LoadToFold::construct",
+                   "cannot perform phase-coherent Faraday rotation correction\n\t"
+                   "because input signal is not of type 'Pulsar'");
   }
 
   // the data are not detected, so set up phase coherent reduction path
   // NB that this does not necessarily mean coherent dedispersion.
   unsigned frequency_resolution = config->filterbank.get_freq_res ();
 
+  kernel = 0;
+  
   if (config->coherent_dedispersion)
   {
-    if (!kernel)
-      kernel = new Dedispersion;
+    if (!dedisp)
+      dedisp = new Dedispersion;
 
+    kernel = dedisp;
+  }
+  
+  if (config->coherent_debirefraction)
+  {
+    if (!debiref)
+      debiref = new Debirefraction;
+
+    if (!dedisp)
+    {
+      kernel = debiref;
+    }
+    else
+    {
+      PlasmaResponseProduct* product = new PlasmaResponseProduct;
+      product->add_response (debiref);
+      product->add_response (dedisp);
+      kernel = product;
+    }
+  }
+
+  if (kernel)
+  {
     if (frequency_resolution)
     {
       if (report_vitals)
@@ -223,9 +262,6 @@ void dsp::LoadToFold::construct () try
         kernel->set_optimal_fft( new OptimalFFT );
     }
   }
-  else
-    kernel = 0;
-
 
   if (!config->integration_turns && !passband)
     passband = new Response;
@@ -752,8 +788,8 @@ void dsp::LoadToFold::prepare_interchan (TimeSeries* data, bool run_on_gpu)
   sample_delay->set_input (data);
   sample_delay->set_output (data);
   sample_delay->set_function (new Dedispersion::SampleDelay);
-  if (kernel)
-    kernel->set_fractional_delay (true);
+  if (dedisp)
+    dedisp->set_fractional_delay (true);
 
 #if HAVE_CUDA
   if (run_on_gpu)
@@ -780,6 +816,21 @@ double get_dispersion_measure (const Pulsar::Parameters* parameters)
   }
 
   throw Error (InvalidState, "get_dispersion_measure (Pulsar::Parameters*)",
+               "unknown Parameters class");
+}
+
+double get_rotation_measure (const Pulsar::Parameters* parameters)
+{
+  const Pulsar::TextParameters* teph;
+  teph = dynamic_cast<const Pulsar::TextParameters*>(parameters);
+  if (teph)
+  {
+    double rm = 0.0;
+    teph->get_value (rm, "DM");
+    return rm;
+  }
+
+  throw Error (InvalidState, "get_rotation_measure (Pulsar::Parameters*)",
                "unknown Parameters class");
 }
 
@@ -856,11 +907,38 @@ void dsp::LoadToFold::prepare ()
       throw Error (InvalidState, "LoadToFold::prepare",
                    "coherent dedispersion enabled, but DM unknown");
 
-    if (kernel)
-      kernel->set_dispersion_measure (dm);
+    if (dedisp)
+      dedisp->set_dispersion_measure (dm);
   }
 
   manager->get_info()->set_dispersion_measure( dm );
+
+  double rm = 0.0;
+
+  if (config->rotation_measure)
+  {
+    rm = config->rotation_measure;
+    if (Operation::verbose)
+      cerr << "LoadToFold::prepare config RM=" << rm << endl;
+  }
+  else if (parameters)
+  {
+    rm = get_rotation_measure (parameters);
+    if (Operation::verbose)
+      cerr << "LoadToFold::prepare ephem RM=" << rm << endl;
+  }
+
+  if (config->coherent_debirefraction)
+  {
+    if (rm == 0.0)
+      throw Error (InvalidState, "LoadToFold::prepare",
+                   "coherent debirefreaction enabled, but RM unknown");
+
+    if (debiref)
+      debiref->set_rotation_measure (rm);
+  }
+
+  manager->get_info()->set_rotation_measure( rm );
 
   // --repeat must reset the dm when the input is re-opened
   config->dispersion_measure = dm;
