@@ -511,6 +511,7 @@ try
   archive-> set_bandwidth ( phase->get_bandwidth() );
   archive-> set_centre_frequency ( phase->get_centre_frequency() );
   archive-> set_dispersion_measure ( phase->get_dispersion_measure() );
+  archive-> set_rotation_measure( phase->get_rotation_measure() );
 
   archive-> set_dedispersed( archive_dedispersed );
   archive-> set_faraday_corrected (false);
