@@ -68,30 +68,46 @@ void dsp::Dedispersion::prepare (const Observation* input, unsigned channels)
   PlasmaResponse::prepare ( input, channels );
 }
 
-void dsp::Dedispersion::build (unsigned ndat, unsigned nchan)
+void dsp::Dedispersion::build (unsigned _ndat, unsigned _nchan)
 {
+  if (verbose)
+    cerr << "dsp::Dedispersion::build nchan=" << _nchan << " nfilt=" << _ndat
+         << " dm=" << get_dispersion_measure() << endl;
+
   // calculate the complex frequency response function
-  vector<float> phases (ndat * nchan);
+  vector<float> phases (_ndat * _nchan);
 
-  build (phases, ndat, nchan);
+  build (phases, _ndat, _nchan);
 
-  resize (1, nchan, ndat, 2);
+  resize (1, _nchan, _ndat, 2);
   complex<float>* phasors = reinterpret_cast< complex<float>* > ( buffer );
   uint64_t npt = ndat * nchan;
 
   for (unsigned ipt=0; ipt<npt; ipt++)
     phasors[ipt] = polar (float(1.0), phases[ipt]);
 
+#ifdef _DEBUG
+  for (unsigned ipt=0; ipt<npt; ipt++)
+    cerr << "Dedispersion::build ipt=" << ipt << " " << buffer[ipt*2] << " " << buffer[ipt*2+1] << endl;
+#endif
+
   // always zap DC channel
   phasors[0] = 0;
 
   if (verbose)
-    cerr << "dsp::Dedispersion::build nchan=" << nchan << " nfilt=" << ndat << endl;
+    cerr << "dsp::Dedispersion::build done.  nchan=" << nchan 
+         << " nfilt=" << ndat << endl;
 }
 
-void dsp::Dedispersion::build (std::vector<float>& phases, unsigned npts, unsigned nchan)
+void dsp::Dedispersion::build (std::vector<float>& phases, 
+                               unsigned _npts, unsigned _nchan)
 {
-  PlasmaResponse::build (phases, "dispersion", dispersion_measure, this, ndat, nchan);
+  if (verbose)
+    cerr << "dsp::Dedispersion::build std::vector<float> nchan=" << nchan 
+         << " nfilt=" << _npts << endl;
+
+  PlasmaResponse::build (phases, "dispersion", dispersion_measure, 
+                         this, _npts, _nchan);
 }
 
 /*!

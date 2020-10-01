@@ -156,6 +156,9 @@ namespace dsp {
     //! Set flags that response should be swapped
     void flagswap (unsigned divisions = 1);
 
+    //! Worker function checks that every value in response is finite
+    void check_finite (const char* name);
+
   protected:
 
     void calc_lcf (unsigned a, unsigned b, const Rational& osf, std::vector<unsigned>& result);

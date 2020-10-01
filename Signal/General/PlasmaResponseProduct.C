@@ -26,9 +26,7 @@ void dsp::PlasmaResponseProduct::prepare (const Observation* obs, unsigned nchan
          << " nresp=" << response.size() << endl;
 
   for (unsigned iresp=0; iresp < response.size(); iresp++)
-  {
     response[iresp]->prepare (obs, nchan);
-  }
 
   PlasmaResponse::prepare (obs, nchan);
 }
@@ -75,6 +73,9 @@ void dsp::PlasmaResponseProduct::build (unsigned _ndat, unsigned _nchan)
     if (verbose)
       cerr << "dsp::PlasmaResponseProduct::build iresp=" << iresp << endl;
     response[iresp]->build (_ndat, _nchan);
+
+    string name = "dsp::PlasmaResponseProduct::build component " + tostring(iresp);
+    response[iresp]->check_finite (name.c_str());
   }
 
   if (verbose)
@@ -93,6 +94,8 @@ void dsp::PlasmaResponseProduct::build (unsigned _ndat, unsigned _nchan)
       cerr << "dsp::PlasmaResponseProduct::build multiply iresp=" << iresp << endl;
     Response::operator *= (*response[iresp]);
   }
+
+  check_finite ("dsp::PlasmaResponseProduct::build (after product)");
 
   if (verbose)
     cerr << "dsp::PlasmaResponseProduct::build done" << endl;

@@ -181,7 +181,7 @@ void dsp::PlasmaResponse::build (std::vector<T>& response,
       "\n  bandwidth = " << get_bandwidth() <<
       "\n  " << name << " measure = " << measure <<
       "\n  Doppler shift = " << get_Doppler_shift() <<
-      "\n  ndat = " << ndat <<
+      "\n  ndat = " << _ndat <<
       "\n  nchan = " << _nchan <<
       "\n  centred on DC = " << dc_centred << std::endl;
 
@@ -204,6 +204,10 @@ void dsp::PlasmaResponse::build (std::vector<T>& response,
 
   for (unsigned ichan = 0; ichan < _nchan; ichan++)
   {
+#ifdef _DEBUG
+    cerr << "dsp::PlasmaResponse::build ichan=" << ichan << std::endl;
+#endif
+
     double chan_cfreq = lower_cfreq + double(ichan) * chanwidth;
 
     frequency_output[ichan] = chan_cfreq;
@@ -218,6 +222,9 @@ void dsp::PlasmaResponse::build (std::vector<T>& response,
       double freq = double(ipt)*binwidth - 0.5*chanwidth;
 
       response[spt+ipt] = child->build_compute (chan_cfreq, freq);
+#ifdef _DEBUG
+      cerr << ichan << " " << ipt << " " << response[spt+ipt] << std::endl;
+#endif
     }
   }
 }

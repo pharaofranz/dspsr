@@ -19,7 +19,7 @@
 
 using namespace std;
 
-//#define _DEBUG
+// #define _DEBUG
 
 /*! If specified, this attribute restricts the value for ndat chosen by
   the set_optimal_ndat method, enabling the amount of RAM used by the calling
@@ -75,6 +75,9 @@ const dsp::Response& dsp::Response::operator = (const Response& response)
 //! Multiplication operator
 const dsp::Response& dsp::Response::operator *= (const Response& response)
 {
+  if (verbose)
+    cerr << "dsp::Response::operator *=" << endl;
+
   if (ndat*nchan != response.ndat * response.nchan)
     throw Error (InvalidParam, "dsp::Response::operator *=",
 		 "ndat=%u*nchan=%u != other ndat=%u*nchan=%u", ndat, nchan,
@@ -99,14 +102,28 @@ const dsp::Response& dsp::Response::operator *= (const Response& response)
   unsigned original_step = response.step;
   response.step = ndim / response.ndim;
 
-   for (unsigned istep=0; istep < step; istep++)
+#ifdef _DEBUG
+  cerr << "dsp::Response::operator *= npol=" << npol << " nchan=" << nchan
+       << " this.ndim=" << ndim << " other.ndim=" << response.ndim
+       << " this.step=" << step << " other.step=" << response.step << endl;
+#endif
+
+  for (unsigned istep=0; istep < response.step; istep++)
     for (unsigned ipol=0; ipol < npol; ipol++)
-     for (unsigned ichan=0; ichan < nchan; ichan++)
-     	response.operate (buffer + offset*ipol + ichan*ndat*ndim + istep, ipol, ichan);
+      for (unsigned ichan=0; ichan < nchan; ichan++)
+      {
+        float* ptr = get_datptr (ichan, ipol);
+     	response.operate (ptr + istep*response.ndim, ipol, ichan);
+      }
 
   response.step = original_step;
 
   changed.send (*this);
+
+#ifdef _DEBUG
+  cerr << "dsp::Response::operator *= return" << endl;
+#endif
+
   return *this;
 }
 
@@ -139,22 +156,26 @@ void dsp::Response::match (const Observation* input, unsigned channels)
   if (verbose)
     cerr << "dsp::Response::match input.nchan=" << input->get_nchan()
 	 << " channels=" << channels << endl;
-  input_nchan = input->get_nchan();
-  if ( input->get_nchan() == 1 ) {
 
+  input_nchan = input->get_nchan();
+
+  if ( input_nchan == 1 )
+  {
     // if the input Observation is single-channel, complex sampled
     // data, then the first forward FFT performed on this data will
     // result in a swapped spectrum
-    if ( input->get_dual_sideband() && !whole_swapped ) {
+    if ( input->get_dual_sideband() && !whole_swapped )
+    {
       if (verbose)
 	cerr << "dsp::Response::match swap whole" << endl;
       doswap ();
     }
   }
-  else  {
-
+  else
+  {
     // if the filterbank channels are centred on DC
-    if ( input->get_dc_centred() && !dc_centred ) {
+    if ( input->get_dc_centred() && !dc_centred )
+    {
       if (verbose)
 	cerr << "dsp::Response::match rotate half channel" << endl;
 
@@ -176,7 +197,8 @@ void dsp::Response::match (const Observation* input, unsigned channels)
     }
 
     // the ordering of the filterbank channels may be swapped
-    if ( input->get_swap() && !whole_swapped ) {
+    if ( input->get_swap() && !whole_swapped )
+    {
       if (verbose)
 	cerr << "dsp::Response::match swap whole (nchan=" << nchan << ")"
 	     << endl;
@@ -361,7 +383,7 @@ vector<float> dsp::Response::get_passband (unsigned ipol, int ichan) const
     ichan = 0;
   }
 
-  register float* f_p = buffer + offset * ipol + ichan * ndat * ndim;
+  register const float* f_p = get_datptr (ichan, ipol);
 
   vector<float> retval (npts);
   for (unsigned ipt=0; ipt < npts; ipt++)
@@ -387,9 +409,10 @@ void dsp::Response::operate (float* data, unsigned ipol, int ichan) const
     operate(data,ipol,ichan,1);
 }
 
-//! Multiply spectrum by complex frequency response
+//! Multiply spectrum by complex frequency response in specified channels
 void
-dsp::Response::operate (float* spectrum, unsigned poln, int ichan_start, unsigned nchan_op) const
+dsp::Response::operate (float* spectrum, unsigned poln, int ichan_start, 
+                        unsigned nchan_op) const
 {
   assert (ndim == 2);
 
@@ -409,7 +432,7 @@ dsp::Response::operate (float* spectrum, unsigned poln, int ichan_start, unsigne
     npts *= nchan_op;
 
   register float* d_from = spectrum;
-  register float* f_p = buffer + offset * ipol + ichan_start * ndat * ndim;
+  register const float* f_p = get_datptr (ichan_start, ipol);
 
   /*
     this operates on spectrum; i.e.  A = A * B where
@@ -420,7 +443,7 @@ dsp::Response::operate (float* spectrum, unsigned poln, int ichan_start, unsigne
 #ifdef _DEBUG
   cerr << "dsp::Response::operate nchan=" << nchan << " ipol=" << ipol
        << " buf=" << buffer << " f_p=" << f_p
-       << " off=" << offset(ipol) << endl;
+       << " off=" << offset << endl;
 #endif
 
   // the idea is that by explicitly calling the values from the
@@ -438,6 +461,10 @@ dsp::Response::operate (float* spectrum, unsigned poln, int ichan_start, unsigne
     d_i = d_from[1];
     f_r = f_p[0];
     f_i = f_p[1];
+
+#ifdef _DEBUG
+    cerr << "d=" << d_r << " +i" << d_i << " f=" << f_r << " +i" << f_i << endl;
+#endif
 
     d_from[0] = f_r * d_r - f_i * d_i;
     d_from[1] = f_i * d_r + f_r * d_i;
@@ -473,7 +500,7 @@ dsp::Response::operate (float* input_spectrum, float * output_spectrum,
 
   register float* d_from = input_spectrum;
   register float* d_into = output_spectrum;
-  register float* f_p = buffer + offset * ipol + ichan_start * ndat * ndim;
+  register const float* f_p = get_datptr (ichan_start, ipol);
 
   /*
     this operates on spectrum; i.e.  C = A * B where
@@ -485,7 +512,7 @@ dsp::Response::operate (float* input_spectrum, float * output_spectrum,
 #ifdef _DEBUG
   cerr << "dsp::Response::operate nchan=" << nchan << " ipol=" << ipol
        << " buf=" << buffer << " f_p=" << f_p
-       << " off=" << offset(ipol) << endl;
+       << " off=" << offset << endl;
 #endif
 
   // the idea is that by explicitly calling the values from the
@@ -538,12 +565,12 @@ void dsp::Response::integrate (float* data, unsigned ipol, int ichan)
   }
 
   register float* d_p = data;
-  register float* f_p = buffer + offset * ipol + ichan * ndat * ndim;
+  register float* f_p = get_datptr (ichan, ipol);
 
 #ifdef _DEBUG
   cerr << "dsp::Response::integrate ipol=" << ipol
        << " buf=" << buffer << " f_p=" << f_p
-       << "off=" << offset(ipol) << endl;
+       << "off=" << offset << endl;
 #endif
 
   register float d;
@@ -872,3 +899,26 @@ void dsp::Response::calc_oversampled_discard_region(
   //     << std::endl;
   // }
 }
+
+void dsp::Response::check_finite (const char* name)
+{
+  for (unsigned ichan=0; ichan < get_nchan(); ichan++)
+  {
+    for (unsigned ipol=0; ipol < get_npol(); ipol++)
+    {
+      float* tmp = get_datptr (ichan, ipol);
+      for (unsigned idat=0; idat < get_ndat(); idat++)
+      {
+        for (unsigned idim=0; idim < get_ndim(); idim++)
+        {
+          if (!finite(*tmp))
+            throw Error (InvalidState, name,
+                         "not finite: ichan=%u ipol=%u idat=%u idim=%u", 
+                         ichan, ipol, idat, idim);
+          tmp ++;
+        }
+      }
+    }
+  }
+}
+

@@ -55,8 +55,15 @@ void dsp::Debirefraction::build_setup (double chan_freq)
 
 Jones<float> dsp::Debirefraction::build_compute (double chan_freq, double freq)
 {
-  birefringence.set_frequency (freq);
-  return birefringence.evaluate ();
+  birefringence.set_frequency (chan_freq + freq);
+  Jones<float> J = birefringence.evaluate ();
+
+  if (!finite(J))
+    throw Error (InvalidState, "dsp::Debirefraction::build_compute",
+                 "non-finite J=" + tostring(J) + 
+                 " ref_freq=" + tostring(chan_freq) + " freq=" + tostring(freq));
+
+  return J;
 }
 
 void dsp::Debirefraction::build (unsigned _ndat, unsigned _nchan)
@@ -70,6 +77,8 @@ void dsp::Debirefraction::build (unsigned _ndat, unsigned _nchan)
   
   set (response);
   resize (1, _nchan, _ndat, 8);
+
+  check_finite ("dsp::Debirefraction::build");
 
   if (verbose)
     cerr << "dsp::Debirefraction::build nchan=" << nchan << " nfilt=" << ndat << endl;
