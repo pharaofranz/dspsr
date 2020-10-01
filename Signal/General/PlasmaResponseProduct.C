@@ -82,7 +82,7 @@ void dsp::PlasmaResponseProduct::build (unsigned _ndat, unsigned _nchan)
     cerr << "dsp::PlasmaResponseProduct::build copy response[0]->nchan=" 
          << response[0]->get_nchan() << " nfilt=" << response[0]->get_ndat() << endl;
 
-  Response::operator = (*response[0]);
+  Shape::operator = (*response[0]);
 
   if (verbose)
     cerr << "dsp::PlasmaResponseProduct::build nchan=" << nchan
