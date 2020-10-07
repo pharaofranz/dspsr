@@ -182,6 +182,9 @@ namespace dsp {
     //! Prepare the output TimeSeries
     void prepare_output ();
 
+    //! Prepare the output passband
+    void prepare_passband ();
+
     //! zero DM flag -- this indicates whether to do a parallel transformation
     //! without any dedispersion
     bool zero_DM;
