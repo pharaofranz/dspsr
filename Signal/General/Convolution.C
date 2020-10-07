@@ -182,9 +182,6 @@ void dsp::Convolution::prepare ()
   response->match (input);
   normalizer->match (input);
 
-  if (passband)
-    passband->match (response);
-
   // zero_DM response should at least have a normalizer
   if (zero_DM && zero_DM_response)
     zero_DM_response->match (input);
@@ -307,8 +304,9 @@ void dsp::Convolution::prepare ()
       zero_DM_output = new dsp::TimeSeries;
     }
   }
-  prepare_output ();
 
+  prepare_output ();
+  prepare_passband ();
 
   if (engine)
   {
@@ -335,6 +333,11 @@ void dsp::Convolution::prepare_output ()
 {
   Signal::State state = input->get_state();
   const uint64_t ndat = input->get_ndat();
+
+  if (verbose)
+    cerr << "dsp::Convolution::prepare_output input"
+         << " ndat=" << input->get_ndat()
+         << " state=" << input->get_state() << endl;
 
   // valid time samples per FFT
   nsamp_step = nsamp_fft-nsamp_overlap;
@@ -414,6 +417,25 @@ void dsp::Convolution::prepare_output ()
   }
 }
 
+void dsp::Convolution::prepare_passband ()
+{
+  // the engine should delete the passband if it doesn't support this feature
+  if (!passband)
+    return;
+
+  if (response)
+    passband -> match (response);
+
+  unsigned passband_npol = input->get_npol();
+  if (matrix_convolution)
+    passband_npol = 4;
+
+  passband->resize (passband_npol, input->get_nchan(), n_fft, 1);
+
+  if (!response)
+    passband->match (input);
+}
+
 //! Reserve the maximum amount of output space required
 void dsp::Convolution::reserve ()
 {
@@ -426,16 +448,28 @@ void dsp::Convolution::reserve ()
     cerr << "Convolution::reserve ndat=" << ndat << " nfft=" << nsamp_fft
          << " npart=" << npart << endl;
 
-  uint64_t output_ndat = npart * nsamp_step;
-  if ( state == Signal::Nyquist ) {
-    output_ndat /= 2;
+  WeightedTimeSeries* weighted_output;
+  weighted_output = dynamic_cast<WeightedTimeSeries*> (output.get());
+  if (weighted_output)
+  {
+    if (verbose)
+      cerr << "dsp::Convolution::reserve calling "
+              "WeightedTimeSeries::convolve_weights" << endl;
+
+    weighted_output->convolve_weights (nsamp_fft, nsamp_step);
+    if (state == Signal::Nyquist)
+      weighted_output->scrunch_weights (2);
   }
 
-  if (input != output) {
+  uint64_t output_ndat = npart * nsamp_step;
+  if ( state == Signal::Nyquist )
+    output_ndat /= 2;
+
+  if (input != output)
     output->resize (output_ndat);
-  } else {
+  else
     output->set_ndat (output_ndat);
-  }
+  
   // nfilt_pos complex points are dropped from the start of the first FFT
   output->change_start_time (nfilt_pos);
 
@@ -446,15 +480,8 @@ void dsp::Convolution::reserve ()
 
   response->mark (output);
 
-  WeightedTimeSeries* weighted_output;
-  weighted_output = dynamic_cast<WeightedTimeSeries*> (output.get());
-  if (weighted_output)
+  if (zero_DM)
   {
-    weighted_output->convolve_weights (nsamp_fft, nsamp_step);
-    if (state == Signal::Nyquist)
-      weighted_output->scrunch_weights (2);
-  }
-  if (zero_DM) {
     zero_DM_output->resize(output_ndat);
     zero_DM_output->change_start_time(nfilt_pos);
   }
@@ -489,13 +516,19 @@ void dsp::Convolution::transformation ()
 
   reserve ();
 
-  if (verbose) {
+  if (verbose)
+    cerr << "dsp::Convolution::transformation after calling reserve"
+         << "\n\t input ndat=" << input->get_ndat()
+         << "\n\t output ndat=" << output->get_ndat() << endl;
+
+  if (verbose)
+  {
     cerr << "dsp::Convolution::transformation scratch"
       " size=" << scratch_needed  << endl;
-    if (zero_DM) {
-      std::cerr << "dsp::Convolution::transformation using zero DM output" << std::endl;
-    }
+    if (zero_DM)
+      cerr << "dsp::Convolution::transformation using zero DM output" << endl;
   }
+
   float* spectrum[2];
   spectrum[0] = scratch->space<float> (scratch_needed);
   spectrum[1] = spectrum[0];
@@ -565,22 +598,20 @@ void dsp::Convolution::transformation ()
 
         }
 
-        if (matrix_convolution) {
-
+        if (matrix_convolution)
+        {
           response->operate (spectrum[0], spectrum[1], ichan);
 
           if (passband)
             passband->integrate (spectrum[0], spectrum[1], ichan);
-
         }
 
-        else {
-
+        else
+        {
           response->operate (spectrum[ipol], ipol, ichan);
 
           if (passband)
             passband->integrate (spectrum[ipol], ipol, ichan);
-
         }
 
         for (jpol=0; jpol<cross_pol; jpol++)
