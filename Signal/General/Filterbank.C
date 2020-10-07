@@ -298,21 +298,7 @@ void dsp::Filterbank::make_preparations ()
 
   prepare_output ();
 
-  // the engine should delete the passband if it doesn't support this feature
-  if (passband)
-  {
-    if (response)
-      passband -> match (response);
-
-    unsigned passband_npol = input->get_npol();
-    if (matrix_convolution)
-      passband_npol = 4;
-
-    passband->resize (passband_npol, input->get_nchan(), n_fft, 1);
-
-    if (!response)
-      passband->match (input);
-  }
+  prepare_passband ();
 
   if (engine)
   {
