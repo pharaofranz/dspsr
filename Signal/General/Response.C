@@ -559,7 +559,8 @@ void dsp::Response::integrate (float* data, unsigned ipol, int ichan)
 
   // do all channels at once if ichan < 0
   unsigned npts = ndat;
-  if (ichan < 0) {
+  if (ichan < 0)
+  {
     npts *= nchan;
     ichan = 0;
   }
@@ -576,7 +577,8 @@ void dsp::Response::integrate (float* data, unsigned ipol, int ichan)
   register float d;
   register float t;
 
-  for (unsigned ipt=0; ipt<npts; ipt++) {
+  for (unsigned ipt=0; ipt<npts; ipt++)
+  {
     d = *d_p; d_p ++; // Re
     t = d*d;
     d = *d_p; d_p ++; // Im
@@ -686,7 +688,7 @@ void dsp::Response::integrate (float* data1, float* data2, int ichan)
                  "ndim=%u != 1", ndim);
 
   if (npol != 4)
-    throw Error (InvalidState, "dsp::Response::integrate",
+    throw Error (InvalidState, "dsp::Response::integrate (float*, float*)",
                  "npol=%u != 4", npol);
 
   // do all channels at once if ichan < 0
