@@ -140,8 +140,10 @@ uint64_t dsp::WeightedTimeSeries::get_nweights () const
     cerr << "dsp::WeightedTimeSeries::get_nweights FATAL ERROR:\n\t"
             "weights=" << weights << " + nweights=" << nweights <<
             " > base=" << base << " + size=" << weight_subsize <<
-            " (weight_idat=" << weight_idat << ")" << endl;
-    exit (-1);
+            " (weight_idat=" << weight_idat <<
+            " ndat_per_weight=" << ndat_per_weight << ")" << endl;
+    throw Error (InvalidState, "dsp::WeightedTimeSeries::get_nweights",
+                 "invalid nweights=%u", nweights);
   }
 
   return nweights;
