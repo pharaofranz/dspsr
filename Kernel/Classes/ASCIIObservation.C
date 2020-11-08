@@ -101,7 +101,10 @@ void dsp::ASCIIObservation::load (const char* header)
   {
     /* Provide backward-compatibility with CPSR2 header */
     if (ascii_header_get (header, "CPSR2_HEADER_VERSION", "%f", &version) < 0)
-      cerr << "ASCIIObservation: failed read " << hdr_version << endl;
+    {
+      if (verbose)
+        cerr << "ASCIIObservation: failed read " << hdr_version << endl;
+    }
     else
       set_machine ("CPSR2");
   }
