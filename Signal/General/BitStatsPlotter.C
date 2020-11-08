@@ -18,6 +18,7 @@ dsp::BitStatsPlotter::BitStatsPlotter ()
 {
   horizontal = true;
   full_xscale = false;
+  colour = true;
   hist_min = 0.00;
   xscale = 1.0;
 
@@ -75,11 +76,16 @@ void dsp::BitStatsPlotter::check_colours ()
 
   unsigned ndig = data->get_ndig ();
 
-  if (colours.size() < ndig) {
+  if (colours.size() < ndig)
+  {
     int available = colours.size();
     colours.resize(ndig);
 
-    if (available == 0)
+    if (!colour)
+      for (unsigned ic=0; ic<colours.size(); ic++)
+        colours[ic] = 1.0;
+
+    else if (available == 0)
       for (unsigned ic=0; ic<colours.size(); ic++)
 	colours[ic] = defc[ic%2];
 

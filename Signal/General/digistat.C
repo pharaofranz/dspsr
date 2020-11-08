@@ -24,7 +24,7 @@
 
 using namespace std;
 
-static char* args = "c:D:hn:S:s:T:t:vVw:";
+static char* args = "bc:D:hn:S:s:T:t:vVw:";
 
 void usage ()
 {
@@ -64,10 +64,18 @@ int main (int argc, char** argv) try
 
   string pgdev = "?";
 
+  bool colour = true;
+  int point_lw = 1;
+
   int c;
   int scanned;
   while ((c = getopt(argc, argv, args)) != -1)
     switch (c) {
+
+    case 'b':
+      colour = false;
+      point_lw = 5;
+      break;
 
     case 'c':
       scanned = sscanf (optarg, "%f", &excision_cutoff);
@@ -228,6 +236,8 @@ int main (int argc, char** argv) try
       }
     }
 
+    plotter->colour = colour;
+
     if (seek_seconds)
       manager->get_input()->seek_seconds (seek_seconds);
     
@@ -368,8 +378,12 @@ int main (int argc, char** argv) try
 	    cpgbox("bcst",0.0,0,"bcnvst",0.0,0);
 	  cpgmtxt("L",3.5,.5,.5,"mean");
 	  
-	  cpgsci(5);
+	  if (colour)
+            cpgsci(5);
+
+          cpgslw(point_lw);
 	  cpgpt(npoints, &(xaxis[0]), &(mean[0]), -1);
+          cpgslw(1);
 	  
 	  // plot the rms
 	  
@@ -387,8 +401,12 @@ int main (int argc, char** argv) try
 	  cpgbox("bcst",0.0,0,"bcnvst",0.0,0);
 	  cpgmtxt("L",3.5,.5,.5,"rms");
 	  
-	  cpgsci(6);
+	  if (colour)
+            cpgsci(6);
+
+          cpgslw(point_lw);
 	  cpgpt(npoints, &(xaxis[0]), &(rms[0]), -1);
+          cpgslw(1);
 	  
 	  bottom = 0.08;
 	}

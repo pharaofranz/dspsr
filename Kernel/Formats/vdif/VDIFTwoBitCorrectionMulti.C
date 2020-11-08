@@ -11,7 +11,7 @@ bool dsp::VDIFTwoBitCorrectionMulti::matches (const Observation* observation)
 {
   return observation->get_machine() == "VDIF" 
       && observation->get_nbit() == 2
-      && observation->get_npol() == 2;
+      && (observation->get_npol() > 1 || observation->get_nchan() > 1);
 }
 
 //! Null constructor
@@ -19,6 +19,7 @@ dsp::VDIFTwoBitCorrectionMulti::VDIFTwoBitCorrectionMulti ()
   : SubByteTwoBitCorrection ("VDIFTwoBitCorrectionMulti")
 {
   table = new TwoBitTable (TwoBitTable::OffsetBinary);
+  // table = new TwoBitTable (TwoBitTable::TwosComplement);
 }
 
 void dsp::VDIFTwoBitCorrectionMulti::unpack ()

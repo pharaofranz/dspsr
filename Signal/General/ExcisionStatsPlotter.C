@@ -161,6 +161,12 @@ double dsp::ExcisionStatsPlotter::get_chi_squared (int idig)
 
 void dsp::ExcisionStatsPlotter::set_theory_colour ()
 {
+  if (!colour)
+  {
+    theory_colour = 1;
+    return;
+  }
+
   theory_colour = 7; 
 
   for (int ic=0; ic<(int)colours.size(); ic++)
@@ -241,7 +247,9 @@ bool dsp::ExcisionStatsPlotter::special (unsigned imin, unsigned imax,
 
   // plot the theoretical distribution of number of ones
   cpgsci(theory_colour);
+  cpgslw (3);
   cpgpt (plot_theory, -1);
+  cpgslw (1);
 
   // draw the cut-off sigma lines
   if (show_cutoff_sigma)
