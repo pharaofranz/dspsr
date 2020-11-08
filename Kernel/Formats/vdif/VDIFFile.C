@@ -40,6 +40,8 @@ dsp::VDIFFile::~VDIFFile ( )
 
 bool dsp::VDIFFile::is_valid (const char* filename) const
 {
+  if (verbose)
+    cerr << "dsp::VDIFFile::is_valid filename=" << filename << endl;
 
   // Open the header file, check for INSTRUMENT=VDIF
   // TODO use a different keyword?
@@ -47,7 +49,7 @@ bool dsp::VDIFFile::is_valid (const char* filename) const
   if (!fptr) 
   {
     if (verbose)
-      cerr << "dsp::VDIFFile::is_valid Error opening file." << endl;
+      cerr << "dsp::VDIFFile::is_valid Error opening filename=" << filename << endl;
     return false;
   }
 
@@ -256,5 +258,12 @@ void dsp::VDIFFile::open_file (const char* filename)
 
 void dsp::VDIFFile::reopen ()
 {
-  throw Error (InvalidState, "dsp::VDIFFile::reopen", "unsupported");
+  if (fd > 0)
+    throw Error (InvalidState, "dsp::VDIFFile::reopen", "file already open");
+
+  fd = ::open(datafile, O_RDONLY);
+  if (fd<0)
+    throw Error (FailedSys, "dsp::VDIFFile::open_file",
+              "open(%s) failed", datafile);
+
 }
