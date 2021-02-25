@@ -409,11 +409,11 @@ void parse_options (int argc, char** argv) try
     ("specify the name of a database created by pac from which to select\n"
      "the polarization calibrator to be used for matrix convolution");
 
-  arg = menu.add (config->coherent_debirefraction, "debiref");
+  arg = menu.add (config->coherent_debirefraction, "derotate");
   arg->set_help ("enable phase-coherent Faraday rotation correction");
 
   arg = menu.add (config->rotation_measure, "rm");
-  arg->set_help ("Faraday rotation measure used for coherent debirefraction");
+  arg->set_help ("Faraday rotation measure used for coherent correction");
   
   arg = menu.add (config->use_fft_bench, "fft-bench");
   arg->set_help ("use benchmark data to choose optimal FFT length");
