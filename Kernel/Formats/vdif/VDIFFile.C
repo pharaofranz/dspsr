@@ -1,6 +1,6 @@
 /***************************************************************************
  *
- *   Copyright (C) 2011 by Paul Demorest
+ *   Copyright (C) 2011-2021 by Paul Demorest and Willem van Straten
  *   Licensed under the Academic Free License version 2.1
  *
  ***************************************************************************/
