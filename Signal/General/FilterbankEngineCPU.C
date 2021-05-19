@@ -21,6 +21,9 @@
 
 using namespace std;
 
+#define DEFAULT_BCC bcr
+#define IFFT bcr1d
+
 dsp::FilterbankEngineCPU::FilterbankEngineCPU ()
 {
   real_to_complex = false;
@@ -93,7 +96,6 @@ void dsp::FilterbankEngineCPU::setup (dsp::Filterbank* filterbank)
 
   if (freq_res > 1)
   {
-#define DEFAULT_BCC FTransform::bcr
     backward = FTransform::Agent::current->get_plan (freq_res, DEFAULT_BCC);
   } 
 
@@ -277,7 +279,7 @@ void dsp::FilterbankEngineCPU::perform (
 
           for (ichan=0; ichan < nchan_subband; ichan++)
           {
-            backward->bcc1d (freq_res, time_domain_scratch, freq_dom_ptr);
+            backward->IFFT (freq_res, time_domain_scratch, freq_dom_ptr);
 
             freq_dom_ptr += freq_res*2;
 
@@ -336,7 +338,7 @@ void dsp::FilterbankEngineCPU::perform (
 
           for (ichan=0; ichan < nchan_subband; ichan++)
           {
-            backward->bcc1d (freq_res, time_domain_scratch, freq_dom_ptr);
+            backward->IFFT (freq_res, time_domain_scratch, freq_dom_ptr);
 
             freq_dom_ptr += freq_res*2;
 
@@ -488,7 +490,7 @@ void dsp::FilterbankEngineCPU::perform (
 
           for (ichan=0; ichan < nchan_subband; ichan++)
           {
-            backward->bcc1d (freq_res, time_domain_scratch, freq_dom_ptr);
+            backward->IFFT (freq_res, time_domain_scratch, freq_dom_ptr);
 
             freq_dom_ptr += freq_res*2;
 

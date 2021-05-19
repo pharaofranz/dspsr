@@ -31,6 +31,8 @@
 
 using namespace std;
 
+#define DEFAULT_BCC 0
+
 dsp::Convolution::Convolution (const char* _name, Behaviour _type)
   : Transformation<TimeSeries,TimeSeries> (_name, _type)
 {
@@ -326,7 +328,11 @@ void dsp::Convolution::prepare ()
   else
     forward = Agent::current->get_plan (nsamp_fft, FTransform::fcc);
 
+#if DEFAULT_BCC
   backward = Agent::current->get_plan (n_fft, FTransform::bcc);
+#else
+  backward = Agent::current->get_plan (n_fft, FTransform::bcr);
+#endif
 
   prepared = true;
 }
@@ -371,12 +377,18 @@ void dsp::Convolution::prepare_output ()
   // prepare the output TimeSeries
   output->copy_configuration (input);
 
+#if DEFAULT_BCC
   output->set_state( Signal::Analytic );
   output->set_ndim( 2 );
+  if ( state == Signal::Nyquist )
+    output->set_rate( 0.5 * get_input()->get_rate() );
+#else
+  output->set_state( Signal::Nyquist );
+  output->set_ndim( 1 );
+  if ( state == Signal::Analytic ) 
+    output->set_rate( 2.0 * get_input()->get_rate() );
+#endif
 
-  if ( state == Signal::Nyquist ) {
-    output->set_rate( 0.5*get_input()->get_rate() );
-  }
   // set the input sample
   uint64_t output_ndat = output->get_ndat();
   int64_t input_sample = input->get_input_sample();
@@ -591,9 +603,12 @@ void dsp::Convolution::transformation ()
           DEBUG("BACKWARD: nfft=" << n_fft << " in=" << spectrum[ipol] \
                 << " out=" << complex_time);
 
+#if DEFAULT_BCC
           // fft back to the complex time domain
           backward->bcc1d (n_fft, complex_time, spectrum[ipol]);
-
+#else
+          backward->bcr1d (n_fft, complex_time, spectrum[ipol]);
+#endif
           // copy the good (complex) data back into the time stream
           ptr = output -> get_datptr (ichan, ipol) + offset;
 
