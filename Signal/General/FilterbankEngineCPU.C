@@ -91,9 +91,11 @@ void dsp::FilterbankEngineCPU::setup (dsp::Filterbank* filterbank)
     FTransform::set_library( optimal->get_library( freq_res ) );
   }
 
-  if (freq_res > 1){
-    backward = FTransform::Agent::current->get_plan (freq_res, FTransform::bcc);
-  }
+  if (freq_res > 1)
+  {
+#define DEFAULT_BCC FTransform::bcr
+    backward = FTransform::Agent::current->get_plan (freq_res, DEFAULT_BCC);
+  } 
 
   // calculate the amount of scratch space needed
 

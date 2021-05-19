@@ -19,6 +19,8 @@
 
 #include <fstream>
 
+#define DEFAULT_BCC 0
+
 using namespace std;
 
 // #define _DEBUG 1
@@ -338,9 +340,17 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
 
     output->set_npol( input->get_npol() );
     output->set_nchan( nchan );
+
+#if DEFAULT_BCC
     output->set_ndim( 2 );
-    output->set_state( Signal::Analytic);
+    output->set_state( Signal::Analytic );
     output->resize( ndat );
+#else
+    output->set_ndim( 1 );
+    output->set_state( Signal::Nyquist );
+    output->resize( ndat*2 );
+#endif
+
   }
 
   WeightedTimeSeries* weighted_output;
@@ -361,8 +371,15 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
   output->copy_configuration ( get_input() );
 
   output->set_nchan( nchan );
+
+#define DEFAULT_BCC 0
+#if DEFAULT_BCC
   output->set_ndim( 2 );
   output->set_state( Signal::Analytic );
+#else
+  output->set_ndim( 1 );
+  output->set_state( Signal::Nyquist );
+#endif
 
   custom_prepare ();
 
@@ -403,6 +420,12 @@ void dsp::Filterbank::prepare_output (uint64_t ndat, bool set_ndat)
    * when the input TimeSeries is Signal::Nyquist (real) sampled
    */
   double ratechange = double(freq_res) / double (nsamp_fft);
+
+#if ! DEFAULT_BCC
+  cerr << "double rate" << endl;
+  ratechange *= 2.0;
+#endif
+
   output->set_rate (input->get_rate() * ratechange);
 
   if (freq_res == 1)
