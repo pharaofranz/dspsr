@@ -5,8 +5,6 @@
  *
  ***************************************************************************/
 
-using namespace std;
-
 #include "dsp/TwoBitCorrection.h"
 #include "dsp/TwoBitTable.h"
 #include "dsp/Input.h"
@@ -16,6 +14,8 @@ using namespace std;
 
 #include "Error.h"
 #include "ierf.h"
+
+using namespace std;
 
 #include <assert.h>
 

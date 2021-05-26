@@ -179,9 +179,13 @@ void dsp::ExcisionUnpacker::unpack ()
     cerr << "dsp::ExcisionUnpacker::unpack" << endl;;
 
   uint64_t ndat = input->get_ndat();
+  uint64_t nweights = ndat / get_ndat_per_weight();
 
-  if (ndat < get_ndat_per_weight())
+  if (nweights == 0)
     return;
+
+  // ensure that ndat is a multiple of ndat_per_weight
+  ndat = nweights * get_ndat_per_weight();
 
   // build the two-bit lookup table
   if (!built)
@@ -197,7 +201,6 @@ void dsp::ExcisionUnpacker::unpack ()
 
   // weights are used only if output is a WeightedTimeseries
   unsigned* weights = 0;
-  uint64_t nweights = 0;
 
   // the number of floating point numbers to unpack from each digitizer
   uint64_t nfloat = ndat * get_ndim_per_digitizer();
