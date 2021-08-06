@@ -65,7 +65,10 @@ namespace dsp {
       and the additional information should be skipped. */
     virtual int64_t seek_bytes (uint64_t bytes);
 
-    virtual void skip_extra ();
+    //! Skip (by seeking the file pointer) the next tailer and header
+    /*! Optionally return the number of dropped/missing packets;
+        otherwise return zero. */
+    virtual uint64_t skip_extra ();
     
   private:
 

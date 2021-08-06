@@ -85,10 +85,12 @@ int64_t dsp::BlockFile::load_bytes (unsigned char* buffer, uint64_t bytes)
   return bytes - to_load;
 }
 
-void dsp::BlockFile::skip_extra ()
+uint64_t dsp::BlockFile::skip_extra ()
 {
   if (lseek (fd, block_header_bytes + block_tailer_bytes, SEEK_CUR) < 0)
     throw Error (FailedSys, "dsp::BlockFile::load_bytes", "seek(%d)", fd);
+
+  return 0;
 }
 
 //! Adjust the file pointer

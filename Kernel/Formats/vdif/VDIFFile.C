@@ -267,3 +267,30 @@ void dsp::VDIFFile::reopen ()
               "open(%s) failed", datafile);
 
 }
+
+//! On the first seek, set the index of the first packet
+int64_t dsp::VDIFFile::seek_bytes (uint64_t bytes)
+{
+  return BlockFile::seek_bytes (bytes);
+}
+
+//! Check that next packet follows the packet that was just read
+/*! Return the number of missing packets */
+uint64_t dsp::VDIFFile::skip_extra ()
+{
+  /*
+    WvS: Instead of fread from fptr, use read from int fd
+    as in BlockFile::load_bytes
+
+  // Read one header
+  char rawhdr[VDIF_HEADER_BYTES];
+  size_t rv = fread(rawhdr, sizeof(char), VDIF_HEADER_BYTES, fptr);
+
+  */
+  
+  // check for getVDIFFrameInvalid(rawhdr)==0 ???
+
+  // get packet number using getVDIFFrameNumber(rawhdr) ???
+
+  return BlockFile::skip_extra ();
+}

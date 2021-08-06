@@ -38,8 +38,13 @@ namespace dsp {
 
     //! Reopen the file
     void reopen ();
-    
-    //int64_t seek_bytes (uint64_t bytes);
+
+    //! On the first seek, set the index of the first packet
+    int64_t seek_bytes (uint64_t bytes);
+
+    //! Check that next packet follows the packet that was just read
+    /*! Return the number of missing packets */
+    uint64_t skip_extra ();
 
     void* stream;
 
