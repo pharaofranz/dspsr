@@ -54,6 +54,9 @@ namespace dsp {
 
     char datafile[VDIF_MAX_FILENAME_LENGTH];
 
+    int current_frame_number;
+    int frames_per_second;
+    
   };
 
 }

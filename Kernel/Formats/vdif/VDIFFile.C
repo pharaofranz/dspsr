@@ -27,11 +27,14 @@
 
 using namespace std;
 
+static const int uninitialised_frame_number = -2;
+
 dsp::VDIFFile::VDIFFile (const char* filename,const char* headername)
   : BlockFile ("VDIF")
 {
   stream = 0;
   datafile[0] = '\0';
+  current_frame_number = uninitialised_frame_number;
 }
 
 dsp::VDIFFile::~VDIFFile ( )
@@ -233,12 +236,21 @@ void dsp::VDIFFile::open_file (const char* filename)
 
   // Figure frames per sec from bw, pkt size, etc
   int frame_data_size = nbyte - block_header_bytes;
-  double frames_per_sec = get_info()->get_nbit() * get_info()->get_nchan() * get_info()->get_npol()
-    * get_info()->get_rate() / 8.0 / (double) frame_data_size;
-  if (verbose) cerr << "VDIFFile::open_file frame_data_size = " 
-    << frame_data_size << endl;
-  if (verbose) cerr << "VDIFFile::open_file frames_per_sec = " 
-    << frames_per_sec << endl;
+  int bits_per_byte = 8;
+  int bits_per_frame = bits_per_byte * frame_data_size;
+  int bits_per_sample
+    = get_info()->get_nbit()
+    * get_info()->get_nchan()
+    * get_info()->get_npol();
+
+  int samples_per_second = get_info()->get_rate();
+    
+  frames_per_second = bits_per_sample * samples_per_second / bits_per_frame; 
+ 
+  if (verbose)
+    cerr << "VDIFFile::open_file frame_data_size=" 
+	 << frame_data_size << " frames_per_sec=" 
+	 << frames_per_second << endl;
 
   // Set load resolution equal to one frame? XXX
   // This broke file unloading somehow ... wtf..
@@ -250,10 +262,12 @@ void dsp::VDIFFile::open_file (const char* filename)
   if (verbose) cerr << "VDIFFile::open_file MJD = " << mjd << endl;
   if (verbose) cerr << "VDIFFile::open_file sec = " << sec << endl;
   if (verbose) cerr << "VDIFFile::open_file fn  = " << fn << endl;
-  get_info()->set_start_time( MJD(mjd,sec,(double)fn/frames_per_sec) );
+  get_info()->set_start_time( MJD(mjd,sec,(double)fn/frames_per_second) );
 
   // Figures out how much data is in file based on header sizes, etc.
   set_total_samples();
+
+  current_frame_number = uninitialised_frame_number;
 }
 
 void dsp::VDIFFile::reopen ()
@@ -287,10 +301,50 @@ uint64_t dsp::VDIFFile::skip_extra ()
   size_t rv = fread(rawhdr, sizeof(char), VDIF_HEADER_BYTES, fptr);
 
   */
+
+  char rawhdr[VDIF_HEADER_BYTES];
+  ssize_t bytes_read = read (fd, rawhdr, VDIF_HEADER_BYTES);
+
+  vdif_header* hdr = static_cast<vdif_header*> ( (void*) rawhdr );
+
+  if (bytes_read < 0)
+    perror ("dsp::VDIFFile::skip_extra read error");
+
+  bool valid = ! getVDIFFrameInvalid (hdr);
+
+  if (!valid)
+    cerr << "dsp::VDIFFile::skip_extra getVDIFFrameInvalid returns false"
+	 << endl;
+
+  int next_frame_number = getVDIFFrameNumber (hdr);
+
+  uint64_t skipped_packets = 0;
   
-  // check for getVDIFFrameInvalid(rawhdr)==0 ???
+  if (current_frame_number != uninitialised_frame_number)
+  {
+    if (current_frame_number == next_frame_number)
+    {
+      if (verbose)
+	cerr << "dsp::VDIFFile::skip_extra end of data" << endl;
+      return 0;
+    }
+    
+    if (current_frame_number + 1 == frames_per_second)
+    {
+      // expect next_frame_number == 0
+      current_frame_number = -1;
+    }
+    
+    skipped_packets = next_frame_number - current_frame_number - 1;
 
-  // get packet number using getVDIFFrameNumber(rawhdr) ???
+    if (skipped_packets)
+      cerr << "dsp::VDIFFile::skip_extra"
+	" next_frame_number=" << next_frame_number <<
+	" current_frame_number=" << current_frame_number <<
+	" skipped_packets=" << skipped_packets << endl;
+  }
 
-  return BlockFile::skip_extra ();
+  current_frame_number = next_frame_number;
+      
+  return skipped_packets;
 }
