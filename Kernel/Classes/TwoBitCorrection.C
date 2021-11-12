@@ -21,12 +21,12 @@ using namespace std;
 
 // #define _DEBUG 1
 
-bool dsp::TwoBitCorrection::change_levels = true;
-
 //! Null constructor
 dsp::TwoBitCorrection::TwoBitCorrection (const char* _name) 
   : ExcisionUnpacker (_name)
 {
+  dynamic_output_level_setting = true;
+
   // Sub-classes may re-define these
   set_ndat_per_weight (512);
 
@@ -41,7 +41,7 @@ dsp::TwoBitCorrection::~TwoBitCorrection ()
 //! Get the optimal value of the time series variance
 double dsp::TwoBitCorrection::get_optimal_variance ()
 {
-  if (change_levels)
+  if (dynamic_output_level_setting)
     return ja98.A4( ja98.get_mean_Phi() );
   else
     return table->get_optimal_variance();
@@ -52,6 +52,16 @@ double dsp::TwoBitCorrection::get_optimal_variance ()
 unsigned dsp::TwoBitCorrection::get_ndig_per_byte () const
 { 
   return 1;
+}
+
+//! Enable or disable dynamic output level setting
+void dsp::TwoBitCorrection::set_dynamic_output_level_setting (bool flag)
+{
+  if (flag == dynamic_output_level_setting)
+    return;
+
+  dynamic_output_level_setting = flag;
+  not_built ();
 }
 
 //! Set the cut off power for impulsive interference excision
@@ -95,7 +105,7 @@ const dsp::TwoBitTable* dsp::TwoBitCorrection::get_table () const
 
    This table may then be used to employ the dynamic level setting technique
    described by Jenet&Anderson in "Effects of Digitization on Nonstationary
-   Stochastic Signals" for data recorded with CBR or CPSR.
+   Stochastic Signals".
 
    Where possible, references are made to the equations given in this paper,
    which are mostly found in Section 6.
@@ -129,7 +139,11 @@ void dsp::TwoBitCorrection::build ()
   lookup->set_ndat (get_ndat_per_weight());
   lookup->set_ndim (get_ndim_per_digitizer());
 
-  lookup->lookup_build (table, &ja98);
+  JenetAnderson98* tmp = 0;
+  if (dynamic_output_level_setting)
+    tmp = &ja98;
+
+  lookup->lookup_build (table, tmp);
 
   if (verbose) cerr << "dsp::TwoBitCorrection::build exits\n";
 }

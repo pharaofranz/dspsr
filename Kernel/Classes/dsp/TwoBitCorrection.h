@@ -36,14 +36,14 @@ namespace dsp {
 
   public:
 
-    //! Perform the Jenet and Anderson correction
-    static bool change_levels;
-
     //! Null constructor
     TwoBitCorrection (const char* name = "TwoBitCorrection");
 
     //! Virtual destructor
     virtual ~TwoBitCorrection ();
+
+    //! Enable or disable dynamic output level setting
+    void set_dynamic_output_level_setting (bool flag = true);
 
     //! Get the optimal value of the time series variance
     virtual double get_optimal_variance ();
@@ -66,6 +66,9 @@ namespace dsp {
 				     float cutoff_rms = 3.0);
 
   protected:
+
+    //! Perform dynamic output level setting
+    bool dynamic_output_level_setting;
 
     //! Build the two-bit correction look-up table and allocate histograms
     void build ();

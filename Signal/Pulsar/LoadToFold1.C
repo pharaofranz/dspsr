@@ -17,7 +17,7 @@
 #include "dsp/Scratch.h"
 #include "dsp/File.h"
 
-#include "dsp/ExcisionUnpacker.h"
+#include "dsp/TwoBitCorrection.h"
 #include "dsp/WeightedTimeSeries.h"
 
 #include "dsp/ResponseProduct.h"
@@ -872,6 +872,14 @@ void dsp::LoadToFold::prepare ()
     dispersion smearing, and in general the DM is known only after the
     ephemeris is prepared by Fold.
   */
+
+  if (! config->dynamic_output_level_setting )
+  {
+    dsp::TwoBitCorrection* twobit;
+    twobit = dynamic_cast<dsp::TwoBitCorrection*> ( manager->get_unpacker() );
+    if (twobit)
+      twobit->set_dynamic_output_level_setting (false);
+  }
 
   dsp::ExcisionUnpacker* excision;
   excision = dynamic_cast<dsp::ExcisionUnpacker*> ( manager->get_unpacker() );

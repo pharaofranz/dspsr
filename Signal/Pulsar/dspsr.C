@@ -286,8 +286,8 @@ void parse_options (int argc, char** argv) try
   arg->set_long_help
     (" -2c<cutoff>    threshold for impulsive interference excision \n"
      " -2n<sample>    number of samples used to estimate undigitized power \n"
-     " -2t<threshold> two-bit sampling threshold at record time \n");
-
+     " -2t<threshold> two-bit sampling threshold at record time \n"
+     " -2d            disable dynamic output level setting");
 
   arg = menu.add (config->sk_zap, "skz");
   arg->set_help ("apply spectral kurtosis filterbank RFI zapping");
@@ -568,6 +568,13 @@ void parse_options (int argc, char** argv) try
 
   for (unsigned i=0; i<unpack.size(); i++)
   {
+    if (unpack[i] == "d")
+    {
+      cerr << "dspsr: Disabling dynamic output level setting" << endl;
+      config->dynamic_output_level_setting = false;
+      continue;
+    }
+
     const char* carg = unpack[i].c_str();
 
     int scanned = sscanf (carg, "n%u", &config->excision_nsample);

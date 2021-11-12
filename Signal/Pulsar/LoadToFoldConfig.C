@@ -18,6 +18,9 @@ dsp::LoadToFold::Config::Config ()
   maximum_RAM = 256 * 1024 * 1024;
   times_minimum_ndat = 1;
 
+  // by default, apply dynamic output level setting
+  dynamic_output_level_setting = true;
+
   // number of time samples used to estimate undigitized power
   excision_nsample = 0;
 
