@@ -169,6 +169,17 @@ void dsp::LoadToFITS::construct () try
 
   Unpacker* unpacker = manager->get_unpacker();
 
+#if HAVE_CFITSIO && HAVE_fits
+
+  if (config->apply_FITS_scale_and_offset &&
+      manager->get_info()->get_machine() == "FITS")
+  {
+    FITSUnpacker* fun = dynamic_cast<FITSUnpacker*> (manager->get_unpacker());
+    fun->apply_scale_and_offset (true);
+  }
+
+#endif
+
   if (!config->dedisperse && unpacker->get_order_supported (config->order))
     unpacker->set_output_order (config->order);
 
@@ -413,7 +424,7 @@ void dsp::LoadToFITS::construct () try
   }
 #endif
 
-  if ( config->dedisperse )
+  if ( config->dedisperse  || (config->coherent_dedisp && config->fscrunch_factor) )
   {
     if (verbose)
       cerr << "digifits: removing dispersion delays" << endl;
@@ -423,6 +434,10 @@ void dsp::LoadToFITS::construct () try
     delay->set_input (timeseries);
     delay->set_output (timeseries = new_TimeSeries());
     delay->set_function (new Dedispersion::SampleDelay);
+
+    // coherent dedispersion + fscrunching requires additional sample delays
+    if (config->coherent_dedisp && config->fscrunch_factor)
+      delay->set_delay_span(config->fscrunch_factor);
 
 #if HAVE_CUDA
     if (run_on_gpu)
@@ -484,7 +499,7 @@ void dsp::LoadToFITS::construct () try
 
     fscrunch->set_factor( config->fscrunch_factor );
     fscrunch->set_input( timeseries );
-    fscrunch->set_output( timeseries );
+    fscrunch->set_output( timeseries = new_TimeSeries() );
 
 #if HAVE_CUDA
     if (run_on_gpu)

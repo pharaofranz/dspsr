@@ -64,6 +64,7 @@
 #include "dsp/FourthMoment.h"
 #include "dsp/Stats.h"
 
+#include "dsp/FoldManager.h"
 #include "dsp/Fold.h"
 #include "dsp/Subint.h"
 #include "dsp/PhaseSeries.h"
@@ -161,7 +162,7 @@ void dsp::LoadToFold::construct () try
     }
 
     config->coherent_dedispersion = false;
-    prepare_interchan (unpacked);
+    prepare_interchan (unpacked, run_on_gpu);
     build_fold (unpacked);
     return;
   }
@@ -684,7 +685,7 @@ void dsp::LoadToFold::construct () try
 
   operations.push_back (detect.get());
 
-  if (config->npol == 3 || config->npol == 1)
+  if (config->npol == 3 || config->npol == 1 || manager->get_info()->get_npol() == 1)
   {
     detected = new_time_series ();
     detect->set_output (detected);
@@ -718,7 +719,7 @@ void dsp::LoadToFold::construct () try
 
   if (config->sk_fold)
   {
-    PhaseSeriesUnloader* unload = get_unloader( get_nfold() );
+    PhaseSeriesUnloader* unload = get_unloader( config->get_nfold() );
     unload->set_extension( ".sk" );
 
     Reference::To<Fold> skfold;
@@ -1066,16 +1067,6 @@ const char* multifold_error =
   "\t%s\n"
   "The multiple output archives would over-write each other.\n";
 
-size_t dsp::LoadToFold::get_nfold ()
-{
-  size_t nfold = 1 + config->additional_pulsars.size();
-
-  nfold = std::max( nfold, config->predictors.size() );
-  nfold = std::max( nfold, config->ephemerides.size() );
-
-  return nfold;
-}
-
 void dsp::LoadToFold::build_fold (TimeSeries* to_fold)
 {
   if (Operation::verbose)
@@ -1088,7 +1079,7 @@ void dsp::LoadToFold::build_fold (TimeSeries* to_fold)
     operations.push_back (stats);
   }
 
-  size_t nfold = get_nfold ();
+  size_t nfold = config->get_nfold ();
 
   if (nfold > 1 && !config->archive_filename.empty())
     throw Error (InvalidState, "dsp::LoadToFold::build_fold",
@@ -1096,6 +1087,12 @@ void dsp::LoadToFold::build_fold (TimeSeries* to_fold)
 
   if (Operation::verbose)
     cerr << "dsp::LoadToFold::build_fold nfold=" << nfold << endl;
+
+  /*
+    To work on solving https://sourceforge.net/p/dspsr/bugs/93/
+    uncomment the following line
+  */
+  // fold_manager = new FoldManager;
 
   fold.resize (nfold);
   path.resize (nfold);
@@ -1118,6 +1115,12 @@ void dsp::LoadToFold::build_fold (TimeSeries* to_fold)
 
     configure_fold (ifold, to_fold);
   }
+
+  if (fold_manager)
+    operations.push_back( fold_manager.get() );
+  else
+    for (unsigned i=0; i < fold.size(); i++)
+      operations.push_back( fold[i].get() );
 }
 
 dsp::PhaseSeriesUnloader*
@@ -1378,8 +1381,8 @@ void dsp::LoadToFold::configure_fold (unsigned ifold, TimeSeries* to_fold)
 
   if (config->asynchronous_fold)
     asynch_fold[ifold] = new OperationThread( fold[ifold].get() );
-  else
-    operations.push_back( fold[ifold].get() );
+  else if (fold_manager)
+    fold_manager->manage( fold[ifold] );
 
 #if HAVE_CUDA
   if (gpu_stream != undefined_stream)
@@ -1392,7 +1395,6 @@ void dsp::LoadToFold::configure_fold (unsigned ifold, TimeSeries* to_fold)
   }
 #endif
 }
-
 
 void dsp::LoadToFold::prepare_archiver( Archiver* archiver )
 {

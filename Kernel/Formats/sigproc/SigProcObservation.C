@@ -9,6 +9,10 @@
 #include <config.h>
 #endif
 
+#include "Pulsar/Site.h"
+#include "Horizon.h"
+#include "Meridian.h"
+
 #include "dsp/SigProcObservation.h"
 #include "FilePtr.h"
 
@@ -88,10 +92,14 @@ static std::string get_sigproc_telescope_name (int _id)
       return "GMRT";
     case 8:
       return "Effelsberg";
+    case 10:
+      return "SRT";
     case 11:
       return "LOFAR";
     case 12:
       return "VLA";
+    case 64:
+      return "MeerKAT";
     default:
       return "unknown";
       break;
@@ -125,8 +133,10 @@ static int get_sigproc_telescope_id (string name)
     else if (itoa == "GB") return 6;
     else if (itoa == "GM") return 7;
     else if (itoa == "EF") return 8;
+    else if (itoa == "SR") return 10;
     else if (itoa == "LF") return 11;
     else if (itoa == "VL") return 12;
+    else if (itoa == "MK") return 64;
     else return 0;
   }
   catch (Error &error)
@@ -270,7 +280,36 @@ void dsp::SigProcObservation::unload_global ()
 
   // cerr << "raj=" << src_raj << " dej=" << src_dej << endl;
 
-  az_start = za_start = 0.0;
+  const Pulsar::Site* location = 0;
+  Horizon horizon;
+  Directional* directional = &horizon;
+  try
+  {
+    // configure the observatory location
+    location = Pulsar::Site::location (get_telescope());
+    double lat, lon, rad;
+    location->get_sph (lat, lon, rad);
+    Angle latitude;
+    Angle longitude;
+    latitude.setRadians( lat );
+    longitude.setRadians( lon );
+    directional->set_observatory_latitude( latitude.getRadians() );
+    directional->set_observatory_longitude( longitude.getRadians() );
+
+    // configure the source coordinates
+    directional->set_source_coordinates( coordinates );
+
+    MJD mjd(tstart);
+    directional->set_epoch( mjd );
+
+    double rad2deg = 180.0/M_PI;
+    az_start = horizon.get_azimuth() * rad2deg;
+    za_start = horizon.get_zenith() * rad2deg;
+  }
+  catch (Error& error)
+  {
+    az_start = za_start = 0.0;
+  }
 
   for (unsigned ipol=0; ipol < get_npol(); ipol++)
     ::ifstream[ipol] = 'Y';

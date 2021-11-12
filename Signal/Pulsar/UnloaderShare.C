@@ -116,6 +116,8 @@ void dsp::UnloaderShare::unload (const PhaseSeries* data, Submit* submit) try
   // postponed copy
   if (divider_copy)
   { 
+    if (verbose)
+      cerr << "dsp::UnloaderShare::unload postponed divider copy" << endl;
     divider = *divider_copy;
     divider_copy = 0;
   }
@@ -148,12 +150,18 @@ void dsp::UnloaderShare::unload (const PhaseSeries* data, Submit* submit) try
     Storage::division
   */
 
-  bool integrated = false;
+  unsigned integrated = 0;
 
   for (unsigned istore=0; istore < storage.size(); istore++)
     if (storage[istore]->integrate( contributor, division, data ))
-      integrated = true;
+    {
+      if (verbose)
+        cerr << "dsp::UnloaderShare::unload add to istore=" << istore << endl;
+      integrated ++;
+    }
 
+  if (verbose)
+    cerr << "dsp::UnloaderShare::unload integrated=" << integrated << endl;
 
   /*
     WvS - 5 Nov 2011
@@ -168,9 +176,16 @@ void dsp::UnloaderShare::unload (const PhaseSeries* data, Submit* submit) try
   {
     // wake up any threads waiting for completion
 
+    if (verbose)
+      cerr << "dsp::UnloaderShare::unload wait_all=true" << endl;
+
     for (unsigned istore=0; istore < storage.size(); istore++)
       if (storage[istore]->get_finished ())
       {
+        if (verbose)
+          cerr << "dsp::UnloaderShare::unload storage[" << istore << "]"
+                  " is finished" << endl;
+
 	context->broadcast ();
 	break;
       }
@@ -199,6 +214,9 @@ void dsp::UnloaderShare::unload (const PhaseSeries* data, Submit* submit) try
 
     if (wait_all)
     {
+      if (verbose)
+        cerr << "dsp::UnloaderShare::unload waiting for other threads" << endl;
+
       temp->wait_all( context );
       unload (temp);
     }
@@ -206,7 +224,11 @@ void dsp::UnloaderShare::unload (const PhaseSeries* data, Submit* submit) try
   }
 
   if (wait_all)
+  {
+    if (verbose)
+      cerr << "dsp::UnloaderShare::unload done (wait_all=true)" << endl;
     return;
+  }
 
   /*
     Clear any Storage elements that have been finished
@@ -279,7 +301,8 @@ void dsp::UnloaderShare::finish ()
   if (unloader)
   {
     if (Operation::verbose)
-      cerr << "dsp::UnloaderShare::finish call Unloader::finish" << endl;
+      cerr << "dsp::UnloaderShare::finish call Unloader::finish"
+              " unloader=" << (void*) unloader.get() << endl;
     
     unloader->finish ();
   }
@@ -295,8 +318,8 @@ void dsp::UnloaderShare::unload (Storage* store)
   if (unloader) try 
   {
     if (Operation::verbose)
-      cerr << "dsp::UnloaderShare::unload unload division=" << division
-	   << endl;
+      cerr << "dsp::UnloaderShare::unload division=" << division
+	   << " unloader=" << (void*) unloader.get() << endl;
     
     unloader->unload( store->get_profiles() );
   }
@@ -320,6 +343,10 @@ void dsp::UnloaderShare::nonblocking_unload (unsigned istore, Submit* submit)
   if (Operation::verbose)
     submit->cerr << "dsp::UnloaderShare::nonblocking_unload" << endl;
 
+  if (! submit->unloader)
+    throw Error (InvalidState, "dsp::UnloaderShare::nonblocking_unload",
+                 "submit=%x has no unloader", submit);
+
   Reference::To<Storage> store = storage[istore];
   storage.erase (storage.begin() + istore);
 
@@ -330,13 +357,11 @@ void dsp::UnloaderShare::nonblocking_unload (unsigned istore, Submit* submit)
   try {
 
     if (Operation::verbose)
-      submit->cerr << "dsp::UnloaderShare::nonblocking_unload division="
-                   << division << endl;
-    
-    if (!submit->own_unloader)
-      submit->own_unloader = submit->shared_unloader->clone();
+      submit->cerr << "dsp::UnloaderShare::nonblocking_unload"
+                      " division=" << division << 
+                      " unloader=" << (void*) submit->unloader.get() << endl;
 
-    submit->own_unloader->unload( store->get_profiles() );
+    submit->unloader->unload( store->get_profiles() );
   }
   catch (Error& error)
   {
@@ -363,16 +388,16 @@ dsp::UnloaderShare::Submit* dsp::UnloaderShare::Submit::clone () const
 void dsp::UnloaderShare::Submit::set_cerr (std::ostream& os) const
 {
   PhaseSeriesUnloader::set_cerr (os);
-  if (shared_unloader)
-    shared_unloader->set_cerr (os);
+  if (unloader)
+    unloader->set_cerr (os);
 }
 
 //! Set the file unloader
 void dsp::UnloaderShare::Submit::set_unloader (dsp::PhaseSeriesUnloader* psu)
 {
-  shared_unloader = psu;
-  if (shared_unloader)
-    shared_unloader->set_cerr (cerr);
+  unloader = psu;
+  if (unloader)
+    unloader->set_cerr (cerr);
 }
 
 //! Unload the PhaseSeries data
@@ -382,8 +407,8 @@ void dsp::UnloaderShare::Submit::unload (const PhaseSeries* profiles) try
     cerr << "dsp::UnloaderShare::Submit::unload"
       " profiles=" << profiles << " contributor=" << contributor << endl;
 
-  if (shared_unloader)
-    shared_unloader->unload (profiles);
+  if (unloader)
+    unloader->unload (profiles);
   else
     parent->unload( profiles, this );
 }
