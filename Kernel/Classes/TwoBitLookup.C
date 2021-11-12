@@ -60,6 +60,20 @@ void dsp::TwoBitLookup::create ()
   lookup_base = new float [(nlow_max - nlow_min + 1)*get_lookup_block_size()];
 }
 
+/* *************************************************************************
+   TwoBitLookup::lookup_build
+
+   Generates a lookup table of output levels: y1 -> y4, for the range of
+   sample-statistics within the specified range (nlow_min < nlow < nlow_max)
+
+   This table may then be used to employ the dynamic level setting technique
+   described by Jenet&Anderson in "Effects of Digitization on Nonstationary
+   Stochastic Signals".
+
+   Where possible, references are made to the equations given in this paper,
+   which are mostly found in Section 6.
+   ********************************************************************** */
+
 void dsp::TwoBitLookup::lookup_build (TwoBitTable* table,
 				      JenetAnderson98* ja98)
 {
