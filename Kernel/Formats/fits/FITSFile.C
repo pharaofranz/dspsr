@@ -10,9 +10,6 @@
 #include <config.h>
 #endif
 
-#include <fcntl.h>
-#include <assert.h>
-
 #include "Pulsar/Pulsar.h"
 #include "Pulsar/Archive.h"
 #include "Pulsar/Receiver.h"
@@ -25,6 +22,8 @@
 #include "dsp/FITSFile.h"
 #include "dsp/FITSOutputFile.h"
 #include "dsp/CloneArchive.h"
+
+#include <fcntl.h>
 
 using std::cout;
 using std::cerr;
