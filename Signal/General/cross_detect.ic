@@ -27,7 +27,8 @@ void cross_detect (unsigned ndat, float* p, float* q,
   register float q_i;
   unsigned j;
 
-  for (j=0; j<ndat; j++)  {
+  for (j=0; j<ndat; j++)
+  {
     p_r = *p; p++;
     p_i = *p; p++;
 
