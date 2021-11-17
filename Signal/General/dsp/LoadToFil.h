@@ -17,6 +17,7 @@
 #include "dsp/FilterbankConfig.h"
 #include "dsp/Dedispersion.h"
 #include "dsp/OutputFile.h"
+#include "dsp/TwoBitCorrectionConfig.h"
 
 namespace dsp {
 
@@ -76,6 +77,9 @@ namespace dsp {
     // order in which the unpacker will output time samples
     dsp::TimeSeries::Order order;
 
+    //! Configuration of 2-bit correction options
+    TwoBitCorrection::Config twobit_config;
+
     //! Filterbank config options
     Filterbank::Config filterbank;
 
@@ -90,9 +94,6 @@ namespace dsp {
 
     //! coherently dedisperse along with filterbank
     bool coherent_dedisp;
-
-    //! enable or disable 2-bit excision
-    bool excision_enable;
 
     //! integrate in time before digitization
     unsigned tscrunch_factor;

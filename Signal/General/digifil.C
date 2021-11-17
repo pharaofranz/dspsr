@@ -57,6 +57,11 @@ catch (Error& error)
   return -1;
 }
 
+void twobit_parse (const std::string& text)
+{
+  cerr << "digifil: " + config->twobit_config.parse (text) << endl;
+}
+
 void parse_options (int argc, char** argv) try
 {
   CommandLine::Menu menu;
@@ -84,9 +89,10 @@ void parse_options (int argc, char** argv) try
   arg = menu.add (config->rescale_constant, 'c');
   arg->set_help ("keep offset and scale constant");
 
-  arg = menu.add (config->excision_enable, '2');
-  arg->set_help ("disable 2-bit excision");
-
+  arg = menu.add ( &twobit_parse, '2', "code");
+  arg->set_help ("unpacker options (\"2-bit\" excision)");
+  arg->set_long_help (config->twobit_config.help ("2"));
+  
   arg = menu.add (config->filterbank, 'F', "nchan[:D]");
   arg->set_help ("create a filterbank (voltages only)");
   arg->set_long_help

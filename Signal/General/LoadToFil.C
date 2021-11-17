@@ -13,7 +13,6 @@
 
 #include "dsp/IOManager.h"
 #include "dsp/Unpacker.h"
-#include "dsp/ExcisionUnpacker.h"
 
 #include "dsp/FilterbankEngineCPU.h"
 #include "dsp/TFPFilterbank.h"
@@ -80,8 +79,6 @@ dsp::LoadToFil::Config::Config()
   dedisperse = false;
   coherent_dedisp = false;
 
-  excision_enable = true;
-
   tscrunch_factor = 0;
   fscrunch_factor = 0;
 
@@ -136,7 +133,7 @@ void dsp::LoadToFil::construct () try
   if (config->apply_FITS_scale_and_offset &&
       manager->get_info()->get_machine() == "FITS")
   {
-    FITSUnpacker* fun = dynamic_cast<FITSUnpacker*> (manager->get_unpacker());
+    FITSUnpacker* fun = dynamic_cast<FITSUnpacker*> (unpacker);
     fun->apply_scale_and_offset (true);
   }
 
@@ -145,6 +142,7 @@ void dsp::LoadToFil::construct () try
   if (!config->dedisperse && unpacker->get_order_supported (config->order))
     unpacker->set_output_order (config->order);
 
+  config->twobit_config.configure( unpacker );
 
   // get basic information about the observation
 
@@ -463,15 +461,6 @@ void dsp::LoadToFil::prepare () try
       manager->set_block_size( filterbank->get_minimum_samples() );
     }
   }
-
-  if (config->excision_enable==false)
-  {
-    dsp::ExcisionUnpacker* excision;
-    excision = dynamic_cast<dsp::ExcisionUnpacker*> (manager->get_unpacker());
-    if (excision)
-      excision->set_cutoff_sigma(0.0);
-  }
-
 }
 catch (Error& error)
 {
