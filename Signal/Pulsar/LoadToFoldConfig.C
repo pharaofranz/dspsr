@@ -19,18 +19,6 @@ dsp::LoadToFold::Config::Config ()
   maximum_RAM = 256 * 1024 * 1024;
   times_minimum_ndat = 1;
 
-  // by default, apply dynamic output level setting
-  dynamic_output_level_setting = true;
-
-  // number of time samples used to estimate undigitized power
-  excision_nsample = 0;
-
-  // cutoff power used for impulsive interference rejection
-  excision_cutoff = -1.0;
-
-  // sampling threshold
-  excision_threshold = -1.0;
-
   // by default, do not denormalize using DAT_SCL and DAT_OFFS
   apply_FITS_scale_and_offset = false;
 

@@ -16,6 +16,7 @@
 #include "dsp/LoadToFold1.h"
 #include "dsp/FilterbankConfig.h"
 #include "dsp/InverseFilterbankConfig.h"
+#include "dsp/TwoBitCorrectionConfig.h"
 
 namespace Pulsar
 {
@@ -58,14 +59,7 @@ namespace dsp {
     // set the name of the archive class to be used for output
     void set_archive_class (const std::string&);
 
-    // when unpacking 2-bit data, apply dynamic output level setting
-    bool dynamic_output_level_setting;
-    // number of time samples used to estimate undigitized power
-    unsigned excision_nsample;
-    // cutoff power used for impulsive interference rejection
-    float excision_cutoff;
-    // sampling threshold
-    float excision_threshold;
+    TwoBitCorrection::Config twobit_config;
 
     // when unpacking FITS data, denormalize using DAT_SCL and DAT_OFFS
     bool apply_FITS_scale_and_offset;

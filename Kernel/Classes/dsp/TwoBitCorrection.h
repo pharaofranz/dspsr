@@ -42,6 +42,9 @@ namespace dsp {
     //! Virtual destructor
     virtual ~TwoBitCorrection ();
 
+    //! Configuration options
+    class Config;
+    
     //! Enable or disable dynamic output level setting
     void set_dynamic_output_level_setting (bool flag = true);
 

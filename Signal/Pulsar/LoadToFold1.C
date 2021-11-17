@@ -873,29 +873,7 @@ void dsp::LoadToFold::prepare ()
     dispersion smearing, and in general the DM is known only after the
     ephemeris is prepared by Fold.
   */
-
-  if (! config->dynamic_output_level_setting )
-  {
-    dsp::TwoBitCorrection* twobit;
-    twobit = dynamic_cast<dsp::TwoBitCorrection*> ( manager->get_unpacker() );
-    if (twobit)
-      twobit->set_dynamic_output_level_setting (false);
-  }
-
-  dsp::ExcisionUnpacker* excision;
-  excision = dynamic_cast<dsp::ExcisionUnpacker*> ( manager->get_unpacker() );
-
-  if (excision)
-  {
-    if ( config->excision_nsample )
-      excision -> set_ndat_per_weight ( config->excision_nsample );
-
-    if ( config->excision_threshold > 0 )
-      excision -> set_threshold ( config->excision_threshold );
-
-    if ( config->excision_cutoff >= 0 )
-      excision -> set_cutoff_sigma ( config->excision_cutoff );
-  }
+  config->twobit_config.configure( manager->get_unpacker() );
 
   MJD fold_reference_epoch = parse_epoch (config->reference_epoch);
 

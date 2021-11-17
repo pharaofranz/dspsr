@@ -13,7 +13,8 @@ nobase_include_HEADERS = environ.h ascii_header.h Rational.h \
 	dsp/MiniExtension.h dsp/ChannelOrder.h dsp/MiniPlan.h	     \
 	dsp/DataSeries.h dsp/TimeSeries.h dsp/DataSource.h	     \
 	dsp/MultiFile.h dsp/Transformation.h dsp/Digitizer.h	     \
-	dsp/TwoBitCorrection.h dsp/EightBitUnpacker.h		     \
+	dsp/TwoBitCorrection.h dsp/TwoBitCorrectionConfig.h \
+	dsp/EightBitUnpacker.h		     \
 	dsp/Observation.h dsp/TwoBitMask.h dsp/File.h		     \
 	dsp/TwoBitTable.h dsp/Operation.h dsp/Unpacker.h	     \
 	dsp/FourBitUnpacker.h					     \
@@ -44,7 +45,8 @@ libClasses_la_SOURCES = ascii_header.c Rational.C ASCIIObservation.C \
 	DADAFile.C DummyFile.C TestInput.C BitTable.C BitUnpacker.C \
 	BlockFile.C \
 	TimeSeries.C ChannelOrder.C DataSeries.C   \
-	TwoBitCorrection.C Digitizer.C MultiFile.C TwoBitTable.C    \
+	TwoBitCorrection.C TwoBitCorrectionConfig.C \
+	Digitizer.C MultiFile.C TwoBitTable.C    \
 	EightBitUnpacker.C Unpacker.C File.C Observation.C	    \
 	Unpacker_create.C Operation.C WeightedTimeSeries.C	    \
 	FourBitUnpacker.C dsp.C HistUnpacker.C			    \

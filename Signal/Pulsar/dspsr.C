@@ -204,6 +204,11 @@ void prepare (dsp::Pipeline* engine, dsp::Input* input)
 
 #include "CommandLine.h"
 
+void twobit_parse (const std::string& text)
+{
+  cerr << "dspsr: " + config->twobit_config.parse (text) << endl;
+}
+
 void parse_options (int argc, char** argv) try
 {
 
@@ -280,14 +285,9 @@ void parse_options (int argc, char** argv) try
   *********************************************************************** */
   menu.add ("\n" "RFI removal options:");
 
-  vector<string> unpack;
-  arg = menu.add (unpack, '2', "code");
+  arg = menu.add ( &twobit_parse, '2', "code");
   arg->set_help ("unpacker options (\"2-bit\" excision)");
-  arg->set_long_help
-    (" -2c<cutoff>    threshold for impulsive interference excision \n"
-     " -2n<sample>    number of samples used to estimate undigitized power \n"
-     " -2t<threshold> two-bit sampling threshold at record time \n"
-     " -2d            disable dynamic output level setting");
+  arg->set_long_help (config->twobit_config.help ("2"));
 
   arg = menu.add (config->sk_zap, "skz");
   arg->set_help ("apply spectral kurtosis filterbank RFI zapping");
@@ -562,44 +562,6 @@ void parse_options (int argc, char** argv) try
     */
 
     config->minimum_integration_length = 0.1 * config->integration_length;
-  }
-
-  // interpret the unpacker options
-
-  for (unsigned i=0; i<unpack.size(); i++)
-  {
-    if (unpack[i] == "d")
-    {
-      cerr << "dspsr: Disabling dynamic output level setting" << endl;
-      config->dynamic_output_level_setting = false;
-      continue;
-    }
-
-    const char* carg = unpack[i].c_str();
-
-    int scanned = sscanf (carg, "n%u", &config->excision_nsample);
-    if (scanned == 1)
-    {
-      cerr << "dspsr: Using " << config->excision_nsample
-	   << " samples to estimate undigitized power" << endl;
-      continue;
-    }
-
-    scanned = sscanf (carg, "c%f", &config->excision_cutoff);
-    if (scanned == 1)
-    {
-      cerr << "dspsr: Setting impulsive interference excision threshold to "
-	   << config->excision_cutoff << endl;
-      continue;
-    }
-
-    scanned = sscanf (carg, "t%f", &config->excision_threshold);
-    if (scanned == 1)
-    {
-      cerr << "dspsr: Setting two-bit sampling threshold to "
-	   << config->excision_threshold << endl;
-      continue;
-    }
   }
 
   // interpret the nbin argument
