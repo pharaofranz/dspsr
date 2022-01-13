@@ -79,6 +79,9 @@ namespace dsp {
     //! Inquire how many bytes are in the header
     int get_header_bytes() const{ return header_bytes; }
 
+    //! Return true this this is contiguous with that
+    virtual bool contiguous (const File* that) const;
+
     //! typedef used to simplify template syntax in File_registry.C
     typedef Registry::List<File> Register;
 

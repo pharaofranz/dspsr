@@ -229,21 +229,14 @@ void dsp::MultiFile::ensure_contiguity()
       cerr << "dsp::MultiFile::ensure_contiguity files " << ifile-1 
 	   << " and " << ifile << endl;
 
-    Observation* obs1 = files[ifile-1]->get_info();
-    Observation* obs2 = files[ifile]->get_info();;
-
-    if (verbose)
-      cerr << "dsp::MultiFile::ensure_contiguity" << 
-	" obs.start  =" << obs1->get_start_time() << 
-	" obs1.end   =" << obs1->get_end_time() << 
-	" obs2.start =" << obs2->get_start_time() << 
-	" obs2.end   =" << obs2->get_end_time() << endl;
-
-    if ( !obs1->contiguous(*obs2) )
-      throw Error (InvalidParam, "dsp::Multifile::ensure_contiguity",
+    File* file1 = files[ifile-1];
+    File* file2 = files[ifile];
+    
+    if ( !file1->contiguous(file2) )
+	  throw Error (InvalidParam, "dsp::Multifile::ensure_contiguity",
                    "file %d (%s)\n\tis not contiguous with\n\tfile %d (%s)",
-                   ifile-1, files[ifile-1]->get_filename().c_str(),
-                   ifile, files[ifile]->get_filename().c_str()); 
+                   ifile-1, file1->get_filename().c_str(),
+                   ifile, file2->get_filename().c_str());
   }
 
   if (verbose)

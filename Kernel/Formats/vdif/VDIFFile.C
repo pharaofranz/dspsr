@@ -348,3 +348,20 @@ uint64_t dsp::VDIFFile::skip_extra ()
       
   return skipped_packets;
 }
+
+bool dsp::VDIFFile::contiguous (const File* that) const
+{
+  const VDIFFile* like = dynamic_cast<const VDIFFile*> (that);
+
+  if (like == NULL)
+    return false;
+
+  /* this is where you compare the last packet of this with
+     the first packet of like; i.e.
+
+     this = pointer to VDIFFile A
+     like = pointer to VDIFFile B
+  */
+
+  return true;
+}

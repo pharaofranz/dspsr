@@ -325,3 +325,21 @@ int64_t dsp::File::pad_bytes(unsigned char* buffer, int64_t bytes){
 	      "This class (%s) doesn't have a pad_bytes() function",get_name().c_str());
   return -1;
 }
+
+bool dsp::File::contiguous (const File* that) const
+{
+  if (verbose)
+    cerr << "dsp::Observation::contiguous this=" << this << " that=" << (void*) that << endl;
+
+  const Observation* obs1 = this->get_info();
+  const Observation* obs2 = that->get_info();
+
+  if (verbose)
+      cerr << "dsp::File::contiguous" << 
+	" this.start  =" << obs1->get_start_time() << 
+	" this.end   =" << obs1->get_end_time() << 
+	" that.start =" << obs2->get_start_time() << 
+	" that.end   =" << obs2->get_end_time() << endl;
+
+  return obs1->contiguous(*obs2);
+}
