@@ -14,15 +14,19 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 using namespace std;
 
 //! Constructor
 dsp::BlockFile::BlockFile (const char* name) : File (name)
 {
+  // Total number of bytes in a block
   block_bytes = 0;
+
   block_header_bytes = 0;
   block_tailer_bytes = 0;
+  current_block_byte = 0;
 }
 
 //! Destructor
@@ -47,50 +51,114 @@ uint64_t dsp::BlockFile::get_block_data_bytes() const
 }
 
 //! Load bytes from file
+//TODO
+// memset(...)
+// TEST
 int64_t dsp::BlockFile::load_bytes (unsigned char* buffer, uint64_t bytes)
 {
-  if (verbose)
-    cerr << "dsp::BlockFile::load_bytes() nbytes=" << bytes << endl;
-
   uint64_t block_data_bytes = get_block_data_bytes ();
   uint64_t to_load = bytes;
 
-  while (to_load) {
+  if (verbose)
+    cerr << "dsp::BlockFile::load_bytes() nbytes=" << bytes << endl;
+
+  // get missing number of packets, if any
+  uint64_t missed_packets = skip_extra();
   
-    uint64_t to_read = block_data_bytes - current_block_byte;
-    if (to_read > to_load)
-      to_read = to_load;
-
-    ssize_t bytes_read = read (fd, buffer, to_read);
- 
-    if (bytes_read < 0)
-      throw Error (FailedSys, "dsp::BlockFile::load_bytes", "read(%d)", fd);
-
-    to_load -= bytes_read;
-    buffer += bytes_read;
-    current_block_byte += bytes_read;
-
-    if (current_block_byte == block_data_bytes) {
-
-      skip_extra ();
-      current_block_byte = 0;
-
-    }
-
-    // probably the end of file
-    if (uint64_t(bytes_read) < to_read)
-      break;
+  if(verbose){
+    cerr << "dsp::BlockFile::load_bytes() missed_packets=" << missed_packets << endl;
   }
 
+  if(missed_packets > 0){
+    // Fill missed packets with zeros
+    int zeros = 0;
+    while(to_load){
+      uint64_t to_read = block_data_bytes - current_block_byte;
+
+      if(to_read > to_load){
+        to_read = to_load;
+      }
+
+      // buffer = where to write in memory
+      // zeros = data to be written
+      // to_read = number of bytes of 'zeros' to be written
+      // memset() returns a pointer to memory area of 'buffer'
+      memset(buffer, zeros, to_read);
+/*
+      // Error checking
+      // Possibly use memset return address to check for errors?
+      if(bytes_read < 0){
+        throw Error(FailedSys, "dsp::BlockFile::load_bytes", "read(%d)", 0);
+      }
+*/
+      // decrement to_load by the number of bytes that were read (to_read)
+      to_load -= to_read;
+      // increment buffer and current_block_byte by same amount (to_read)
+      buffer += to_read;
+      current_block_byte += to_read;
+
+      if (current_block_byte == block_data_bytes) {
+        current_block_byte = 0;
+      }
+
+/*
+      // probably the end of file
+      if (uint64_t(bytes_read) < to_read){
+        break;
+      }
+*/
+  }
+    
+  } else {
+    // Get real data
+    while (to_load) {
+      // to_read = number of bytes to read  
+      uint64_t to_read = block_data_bytes - current_block_byte;
+      
+      if (to_read > to_load){
+        to_read = to_load;
+      }
+
+      // read(a,b,c) reads 'c'-numOfBytes from 'a', 'filedes', to location 'b' and returns the number of bytes it read. 
+      ssize_t bytes_read = read(fd, buffer, to_read);
+ 
+      if (bytes_read < 0){
+        throw Error (FailedSys, "dsp::BlockFile::load_bytes", "read(%d)", fd);
+      }
+
+      // decrement to_load by the number of bytes that were read (bytes_read)
+      to_load -= bytes_read;
+      // increment buffer and current_block_byte by same amount (bytes_read)
+      buffer += bytes_read;
+      current_block_byte += bytes_read;
+
+      if (current_block_byte == block_data_bytes) {
+        current_block_byte = 0;
+      }
+
+      // probably the end of file
+      if (uint64_t(bytes_read) < to_read){
+        break;
+      }
+    }
+  }
+
+  // should return original size of bytes(?)
   return bytes - to_load;
 }
 
+//TODO
+// Calculate and return number of missed packets
 uint64_t dsp::BlockFile::skip_extra ()
 {
   if (lseek (fd, block_header_bytes + block_tailer_bytes, SEEK_CUR) < 0)
     throw Error (FailedSys, "dsp::BlockFile::load_bytes", "seek(%d)", fd);
 
-  return 0;
+  uint64_t missed_packets = 0;
+
+
+
+  return missed_packets;
 }
 
 //! Adjust the file pointer
