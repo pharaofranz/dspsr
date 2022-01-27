@@ -352,3 +352,26 @@ uint64_t dsp::VDIFFile::skip_extra ()
       
   return skipped_packets;
 }
+
+bool dsp::VDIFFile::contiguous (const File* that) const
+{
+  const VDIFFile* like = dynamic_cast<const VDIFFile*> (that);
+
+  if (like == NULL)
+    return false;
+
+  /* this is where you could compare the last packet of this with
+     the first packet of like; i.e. if
+
+     this = pointer to VDIFFile A
+     like = pointer to VDIFFile B
+
+     ensure that A and B are contiguous.
+
+     However, because the VDIFF unpackers deal with dropped packets,
+     and assuming that files do not contain overlapping content,
+     contiguity requires only (strict weak) ordering in time.
+  */
+
+  return this->get_info()->get_start_time() < that->get_info()->get_start_time();
+}

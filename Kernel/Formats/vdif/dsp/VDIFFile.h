@@ -29,6 +29,9 @@ namespace dsp {
     //! Returns true if file starts with a valid VDIF packet header
     bool is_valid (const char* filename) const;
 
+    //! Return true this this is contiguous with that
+    bool contiguous (const File* that) const;
+
   protected:
 
     friend class VDIFUnpacker;
