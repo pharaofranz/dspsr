@@ -86,12 +86,12 @@ bool dsp::VDIFFile::is_valid (const char* filename) const
   if (rv != VDIF_HEADER_BYTES) {
       if (verbose) 
           cerr << "VDIFFile: Error reading header." << endl;
+  // See if some basic values make sense
     return false;
   }
 
-  // See if some basic values make sense
-  int nbytes = getVDIFFrameBytes(rawhdr);
   if (nbytes<0 || nbytes>MAX_VDIF_FRAME_BYTES) {
+  int nbytes = getVDIFFrameBytes(rawhdr);
       if (verbose) 
           cerr << "VDIFFFile: Frame bytes = " << nbytes << endl;
       return false;
@@ -310,9 +310,9 @@ uint64_t dsp::VDIFFile::skip_extra ()
   if (bytes_read < 0)
     perror ("dsp::VDIFFile::skip_extra read error");
 
-  bool valid = ! getVDIFFrameInvalid (hdr);
+  bool isValid = !getVDIFFrameInvalid (hdr);
 
-  if (!valid)
+  if (!isValid)
     cerr << "dsp::VDIFFile::skip_extra getVDIFFrameInvalid returns false"
 	 << endl;
 
@@ -320,6 +320,9 @@ uint64_t dsp::VDIFFile::skip_extra ()
 
   uint64_t skipped_packets = 0;
   
+  // Check if current_frame_number is !uninitialised, 
+  //  but if it's next_frame_number, nothing's been skipped so return 0
+  // else check for frames_per_seceond overflow
   if (current_frame_number != uninitialised_frame_number)
   {
     if (current_frame_number == next_frame_number)
@@ -329,6 +332,7 @@ uint64_t dsp::VDIFFile::skip_extra ()
       return 0;
     }
     
+    // Deal with frames_per_second overflow
     if (current_frame_number + 1 == frames_per_second)
     {
       // expect next_frame_number == 0
