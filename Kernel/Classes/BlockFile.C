@@ -27,6 +27,8 @@ dsp::BlockFile::BlockFile (const char* name) : File (name)
   block_header_bytes = 0;
   block_tailer_bytes = 0;
   current_block_byte = 0;
+
+  total_bytes_missing = 0;
 }
 
 //! Destructor
@@ -62,84 +64,59 @@ int64_t dsp::BlockFile::load_bytes (unsigned char* buffer, uint64_t bytes)
   if (verbose)
     cerr << "dsp::BlockFile::load_bytes() nbytes=" << bytes << endl;
 
-  // get missing number of packets, if any
-  uint64_t missed_packets = skip_extra();
-  
-  if(verbose){
-    cerr << "dsp::BlockFile::load_bytes() missed_packets=" << missed_packets << endl;
-  }
-
-  if(missed_packets > 0){
-    // Fill missed packets with zeros
-    int zeros = 0;
-    while(to_load){
-      uint64_t to_read = block_data_bytes - current_block_byte;
-
-      if(to_read > to_load){
-        to_read = to_load;
-      }
+  // Get real data
+  while (to_load)
+  {
+    ssize_t bytes_read = 0;
+    
+    if (total_bytes_missing > 0)
+    {
+      // to_read = number of bytes to read  
+      uint64_t to_zero = std::min (to_load, total_bytes_missing);
 
       // buffer = where to write in memory
       // zeros = data to be written
       // to_read = number of bytes of 'zeros' to be written
       // memset() returns a pointer to memory area of 'buffer'
-      memset(buffer, zeros, to_read);
-/*
-      // Error checking
-      // Possibly use memset return address to check for errors?
-      if(bytes_read < 0){
-        throw Error(FailedSys, "dsp::BlockFile::load_bytes", "read(%d)", 0);
-      }
-*/
-      // decrement to_load by the number of bytes that were read (to_read)
-      to_load -= to_read;
-      // increment buffer and current_block_byte by same amount (to_read)
-      buffer += to_read;
-      current_block_byte += to_read;
-
-      if (current_block_byte == block_data_bytes) {
-        current_block_byte = 0;
-      }
-
-/*
-      // probably the end of file
-      if (uint64_t(bytes_read) < to_read){
-        break;
-      }
-*/
-  }
-    
-  } else {
-    // Get real data
-    while (to_load) {
+      memset(buffer, 0, to_zero);
+      bytes_read = to_zero;
+      total_bytes_missing -= to_zero;
+    }
+    else
+    {
       // to_read = number of bytes to read  
-      uint64_t to_read = block_data_bytes - current_block_byte;
-      
-      if (to_read > to_load){
-        to_read = to_load;
-      }
+      uint64_t to_read = std::min (to_load, block_data_bytes - current_block_byte);
 
       // read(a,b,c) reads 'c'-numOfBytes from 'a', 'filedes', to location 'b' and returns the number of bytes it read. 
-      ssize_t bytes_read = read(fd, buffer, to_read);
+      bytes_read = read(fd, buffer, to_read);
  
-      if (bytes_read < 0){
+      if (bytes_read < 0)
+      {
         throw Error (FailedSys, "dsp::BlockFile::load_bytes", "read(%d)", fd);
       }
 
-      // decrement to_load by the number of bytes that were read (bytes_read)
-      to_load -= bytes_read;
-      // increment buffer and current_block_byte by same amount (bytes_read)
-      buffer += bytes_read;
       current_block_byte += bytes_read;
 
-      if (current_block_byte == block_data_bytes) {
-        current_block_byte = 0;
-      }
-
       // probably the end of file
-      if (uint64_t(bytes_read) < to_read){
-        break;
+      if (uint64_t(bytes_read) < to_read)
+      {
+	break;
       }
+    }
+      
+    // decrement to_load by the number of bytes that were read (bytes_read)
+    to_load -= bytes_read;
+    // increment buffer and current_block_byte by same amount (bytes_read)
+    buffer += bytes_read;
+
+    if (current_block_byte == block_data_bytes)
+    {
+      current_block_byte = 0;
+
+      // get missing number of packets, if any
+      uint64_t missed_packets = skip_extra();
+      
+      total_bytes_missing = missed_packets * block_data_bytes;
     }
   }
 
@@ -170,6 +147,10 @@ int64_t dsp::BlockFile::seek_bytes (uint64_t nbytes)
   if (fd < 0)
     throw Error (InvalidState, "dsp::BlockFile::seek_bytes", "invalid fd");
 
+  if (total_bytes_missing)
+    throw Error (InvalidState, "dsp::BlockFile::seek_bytes",
+		 "seeking through missing blocks not implemented");
+  
   uint64_t block_data_bytes = get_block_data_bytes ();
 
   if (verbose)

@@ -45,6 +45,9 @@ namespace dsp {
     //! The current byte within a block
     uint64_t current_block_byte;
 
+    //! Total number of missing bytes to be zeroed with memset
+    uint64_t total_bytes_missing;
+    
     //! Return ndat given the file and header sizes, nchan, npol, and ndim
     /*! Called by open_file for some file types, to determine that the
     header ndat matches the file size.  Requires 'info' parameters
