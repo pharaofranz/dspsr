@@ -272,6 +272,12 @@ void dsp::Input::seek (int64_t offset, int whence)
   // the next sample required by the user
   uint64_t next_sample = load_sample + resolution_offset;
 
+  if (verbose)
+    cerr << "dsp::Input::seek offset=" << offset 
+         << " next_sample=" << next_sample 
+         << " load_sample=" << load_sample 
+         << " resolution_offset=" << resolution_offset << endl;
+
   switch (whence) {
 
   case SEEK_SET:

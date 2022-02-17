@@ -154,13 +154,22 @@ void dsp::File::close ()
   fd = -1;
 }
 
+std::string dsp::File::get_data_filename () const
+{
+  return current_filename;
+}
+
 void dsp::File::reopen ()
 {
   if (fd >= 0)
     throw Error (InvalidState, "dsp::File::reopen", "already open");
 
-  open_fd (current_filename);
+  if (verbose)
+    cerr << "dsp::File::reopen calling open_fd (" << get_data_filename() << ")" << endl;
+  open_fd (get_data_filename());
 
+  if (verbose)
+    cerr << "dsp::File::reopen calling seek_bytes(0)" << endl;
   seek_bytes (0);
 }
 

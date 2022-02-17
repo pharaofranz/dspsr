@@ -32,6 +32,9 @@ namespace dsp {
     //! Return true this this is contiguous with that
     bool contiguous (const File* that) const;
 
+    //! For when the data file is not the current filename
+    std::string get_data_filename () const { return datafile; }
+
   protected:
 
     friend class VDIFUnpacker;
@@ -39,15 +42,13 @@ namespace dsp {
     //! Open the file
     void open_file (const char* filename);
 
-    //! Reopen the file
-    void reopen ();
-
-    //! On the first seek, set the index of the first packet
-    int64_t seek_bytes (uint64_t bytes);
-
     //! Check that next packet follows the packet that was just read
     /*! Return the number of missing packets */
     uint64_t skip_extra ();
+
+    //! Return the number of the next frame
+    /*! \pre file pointer at start of next frame to be read */
+    uint64_t get_next_frame_number ();
 
     void* stream;
 

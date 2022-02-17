@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <assert.h>
 
 using namespace std;
 
@@ -163,6 +164,11 @@ void dsp::VDIFFile::open_file (const char* filename)
 	
   // Read until we get a valid frame
   bool got_valid_frame = false;
+
+  // cerr << "VDIF_HEADER_BYTES=" << VDIF_HEADER_BYTES << " sizeof(vdif_header)=" << sizeof(vdif_header) << endl;
+
+  assert( sizeof(vdif_header) == VDIF_HEADER_BYTES );
+
   char rawhdr_bytes[VDIF_HEADER_BYTES];
   vdif_header *rawhdr = (vdif_header *)rawhdr_bytes;
   int nbyte, legacymode;
@@ -267,86 +273,70 @@ void dsp::VDIFFile::open_file (const char* filename)
   // Figures out how much data is in file based on header sizes, etc.
   set_total_samples();
 
-  current_frame_number = uninitialised_frame_number;
+  current_frame_number = getVDIFFrameNumber (rawhdr);
 }
 
-void dsp::VDIFFile::reopen ()
+uint64_t dsp::VDIFFile::get_next_frame_number ()
 {
-  if (fd > 0)
-    throw Error (InvalidState, "dsp::VDIFFile::reopen", "file already open");
+  off_t current_file_offset = lseek (fd, 0, SEEK_CUR);
 
-  fd = ::open(datafile, O_RDONLY);
-  if (fd<0)
-    throw Error (FailedSys, "dsp::VDIFFile::open_file",
-              "open(%s) failed", datafile);
+  if (current_file_offset % block_bytes != 0)
+  {
+    off_t current_packet_count = current_file_offset / block_bytes;
+    off_t current_packet_offset = current_file_offset - current_packet_count * block_bytes;
 
-}
+    throw Error (InvalidState, "VDIFFile::get_next_frame_number",
+                 "current file offset = %u is not a multiple of %u; byte offset=%u",
+                 current_file_offset, block_bytes, current_packet_offset);
+  }
 
-//! On the first seek, set the index of the first packet
-int64_t dsp::VDIFFile::seek_bytes (uint64_t bytes)
-{
-  return BlockFile::seek_bytes (bytes);
+  char rawhdr[VDIF_HEADER_BYTES];
+  ssize_t bytes_read = read (fd, rawhdr, VDIF_HEADER_BYTES);
+
+  if (bytes_read < VDIF_HEADER_BYTES)
+    return current_frame_number;
+
+  vdif_header* hdr = static_cast<vdif_header*> ( (void*) rawhdr );
+
+  bool isValid = !getVDIFFrameInvalid (hdr);
+
+  if (!isValid)
+    cerr << "dsp::VDIFFile::get_next_frame_number invalid VDIF frame" << endl;
+
+  return getVDIFFrameNumber (hdr);
 }
 
 //! Check that next packet follows the packet that was just read
 /*! Return the number of missing packets */
 uint64_t dsp::VDIFFile::skip_extra ()
 {
-  /*
-    WvS: Instead of fread from fptr, use read from int fd
-    as in BlockFile::load_bytes
-
-  // Read one header
-  char rawhdr[VDIF_HEADER_BYTES];
-  size_t rv = fread(rawhdr, sizeof(char), VDIF_HEADER_BYTES, fptr);
-
-  */
-
-  char rawhdr[VDIF_HEADER_BYTES];
-  ssize_t bytes_read = read (fd, rawhdr, VDIF_HEADER_BYTES);
-
-  vdif_header* hdr = static_cast<vdif_header*> ( (void*) rawhdr );
-
-  if (bytes_read < 0)
-    perror ("dsp::VDIFFile::skip_extra read error");
-
-  bool isValid = !getVDIFFrameInvalid (hdr);
-
-  if (!isValid)
-    cerr << "dsp::VDIFFile::skip_extra getVDIFFrameInvalid returns false"
-	 << endl;
-
-  int next_frame_number = getVDIFFrameNumber (hdr);
+  int next_frame_number = get_next_frame_number ();
 
   uint64_t skipped_packets = 0;
   
-  // Check if current_frame_number is !uninitialised, 
-  //  but if it's next_frame_number, nothing's been skipped so return 0
-  // else check for frames_per_seceond overflow
-  if (current_frame_number != uninitialised_frame_number)
-  {
-    if (current_frame_number == next_frame_number)
-    {
-      if (verbose)
-	cerr << "dsp::VDIFFile::skip_extra end of data" << endl;
-      return 0;
-    }
-    
-    // Deal with frames_per_second overflow
-    if (current_frame_number + 1 == frames_per_second)
-    {
-      // expect next_frame_number == 0
-      current_frame_number = -1;
-    }
-    
-    skipped_packets = next_frame_number - current_frame_number - 1;
+  assert (current_frame_number != uninitialised_frame_number);
 
-    if (skipped_packets)
-      cerr << "dsp::VDIFFile::skip_extra"
+  if (current_frame_number == next_frame_number)
+  {
+    if (verbose)
+      cerr << "dsp::VDIFFile::skip_extra end of data" << endl;
+    return 0;
+  }
+    
+  // Deal with frames_per_second overflow
+  if (current_frame_number + 1 == frames_per_second)
+  {
+    // expect next_frame_number == 0
+    current_frame_number = -1;
+  }
+    
+  skipped_packets = next_frame_number - current_frame_number - 1;
+
+  if (skipped_packets)
+    cerr << "dsp::VDIFFile::skip_extra"
 	" next_frame_number=" << next_frame_number <<
 	" current_frame_number=" << current_frame_number <<
 	" skipped_packets=" << skipped_packets << endl;
-  }
 
   current_frame_number = next_frame_number;
       

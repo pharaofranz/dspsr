@@ -76,6 +76,9 @@ namespace dsp {
     std::string get_filename () const { return current_filename; }
     std::string get_current_filename() const { return current_filename; }
 
+    //! For when the data file is not the current filename
+    virtual std::string get_data_filename () const;
+
     //! Inquire how many bytes are in the header
     int get_header_bytes() const{ return header_bytes; }
 

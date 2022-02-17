@@ -50,6 +50,8 @@ void dsp::Seekable::rewind ()
 {
   end_of_data = false;
   current_sample = 0;
+  if (verbose)
+    cerr << "dsp::Seekable::rewind calling seek(0)" << endl;
   seek (0);
   last_load_ndat = 0;
 }

@@ -154,6 +154,9 @@ void dsp::MultiFile::setup ()
   resolution = loader->resolution;
 
   loader = files[0];
+
+  if (verbose)
+    cerr << "dsp::MultiFile::setup call loader reopen" << endl;
   loader->reopen();
 
   current_index = 0;
@@ -273,7 +276,12 @@ int64_t dsp::MultiFile::load_bytes (unsigned char* buffer, uint64_t bytes) try
     // Ensure we are loading from correct file
     set_loader (index);
 
+    if (verbose)
+      cerr << "dsp::MultiFile::load_bytes calling loader load_bytes (" << to_load << ")" << endl;
     int64_t did_load = loader->load_bytes (buffer, to_load);
+
+    if (verbose)
+      cerr << "dsp::MultiFile::load_bytes loaded " << did_load << " bytes" << endl;
 
     if (did_load < 0)
       return -1;
@@ -327,6 +335,9 @@ int64_t dsp::MultiFile::seek_bytes (uint64_t bytes)
 
   set_loader (index);
 
+  if (verbose)
+    cerr << "dsp::MultiFile::seek_bytes calling loader seek_bytes (" << bytes-total_bytes << ")" << endl;
+
   int64_t seeked = loader->seek_bytes (bytes-total_bytes);
   if (seeked < 0)
     return -1;
@@ -350,6 +361,9 @@ void dsp::MultiFile::set_loader (unsigned index) try
   loader = files[index];
 
   loader->set_output( get_output() );
+
+  if (verbose)
+    cerr << "dsp::MultiFile::set_loader calling Input::reopen" << endl;
   loader->reopen();
 
   current_index = index;

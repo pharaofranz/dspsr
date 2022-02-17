@@ -62,7 +62,11 @@ int64_t dsp::BlockFile::load_bytes (unsigned char* buffer, uint64_t bytes)
   uint64_t to_load = bytes;
 
   if (verbose)
-    cerr << "dsp::BlockFile::load_bytes() nbytes=" << bytes << endl;
+  {
+    cerr << "dsp::BlockFile::load_bytes nbytes=" << bytes << " missing=" << total_bytes_missing << endl;
+    off_t current_offset = lseek (fd, 0, SEEK_CUR);
+    cerr << "dsp::BlockFile::load_bytes current_offset=" << current_offset << endl;
+  }
 
   // Get real data
   while (to_load)
@@ -100,10 +104,12 @@ int64_t dsp::BlockFile::load_bytes (unsigned char* buffer, uint64_t bytes)
       // probably the end of file
       if (uint64_t(bytes_read) < to_read)
       {
+        if (verbose)
+          cerr << "dsp::BlockFile::load_bytes bytes_read=" << bytes_read << " < " << " to_read=" << to_read << endl;
 	break;
       }
     }
-      
+
     // decrement to_load by the number of bytes that were read (bytes_read)
     to_load -= bytes_read;
     // increment buffer and current_block_byte by same amount (bytes_read)
@@ -128,14 +134,13 @@ int64_t dsp::BlockFile::load_bytes (unsigned char* buffer, uint64_t bytes)
 // Calculate and return number of missed packets
 uint64_t dsp::BlockFile::skip_extra ()
 {
+  if (verbose)
+    cerr << "BlockFile::skip_extra skip one tailer and header" << endl;
+
   if (lseek (fd, block_header_bytes + block_tailer_bytes, SEEK_CUR) < 0)
     throw Error (FailedSys, "dsp::BlockFile::load_bytes", "seek(%d)", fd);
 
-  uint64_t missed_packets = 0;
-
-
-
-  return missed_packets;
+  return 0;
 }
 
 //! Adjust the file pointer
