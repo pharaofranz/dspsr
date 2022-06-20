@@ -76,6 +76,8 @@ static dsp::Unpacker::Register::Enter<dsp::LFAASPEADUnpacker> lfaaspead;
 static dsp::Unpacker::Register::Enter<dsp::UWBUnpacker> uwb;
 #include "dsp/UWBFloatUnpacker.h"
 static dsp::Unpacker::Register::Enter<dsp::UWBFloatUnpacker> uwbfloat;
+#include "dsp/UWBTwoBitUnpacker.h"
+static dsp::Unpacker::Register::Enter<dsp::UWBTwoBitUnpacker> uwbtwobit;
 #include "dsp/UWBFourBitUnpacker.h"
 static dsp::Unpacker::Register::Enter<dsp::UWBFourBitUnpacker> uwbfourbit;
 #include "dsp/UWBEightBitUnpacker.h"

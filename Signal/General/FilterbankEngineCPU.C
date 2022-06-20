@@ -214,7 +214,7 @@ void dsp::FilterbankEngineCPU::perform (
   uint64_t* data_from = NULL;
 
   if (verbose) {
-    cerr << "dsp::FilterbankEngineCPU::perform: matrix_convolution= " << matrix_convolution << " pol=" << npol << " cross_pol=" << cross_pol << endl;
+    cerr << "dsp::FilterbankEngineCPU::perform: matrix_convolution=" << matrix_convolution << " pol=" << npol << " cross_pol=" << cross_pol << endl;
     cerr << "dsp::FilterbankEngineCPU::perform: starting main loop" << endl;
   }
 
@@ -260,6 +260,8 @@ void dsp::FilterbankEngineCPU::perform (
 
         // form the zero_DM output timeseries prior response multiplication
         {
+          if (verbose)
+            cerr << "dsp::FilterbankEngineCPU::perform: zero_DM_response=" << zero_DM_response << endl;
           // operate the zero_DM_response, just a ScalarFilter
           if (zero_DM_response)
           {
