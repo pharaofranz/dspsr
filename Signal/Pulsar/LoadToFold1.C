@@ -326,7 +326,6 @@ void dsp::LoadToFold::construct () try
     }
     inverse_filterbank->set_input (unpacked);
     inverse_filterbank->set_output (filterbanked);
-    inverse_filterbank->set_pfb_dc_chan(manager->get_info()->get_pfb_dc_chan());
 
     if (temporal_apodization)
       inverse_filterbank->set_temporal_apodization (temporal_apodization);

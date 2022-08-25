@@ -61,6 +61,9 @@ namespace dsp
     //! Complex-valued data
     bool real_to_complex;
 
+    //! Frequencies are ordered with fft[0]=DC, +ve, fft[N/2]=+/-Nyquist, -ve
+    bool dual_sideband;
+
     //! verbosity flag
     bool verbose;
 
@@ -118,7 +121,7 @@ namespace dsp
     bool fft_plans_setup;
 
     //! This flag indicates whether we have the DC, or zeroth PFB channel.
-    //! From the parent InverseFilterbank
+    //! From the TimeSeries input to the parent InverseFilterbank
     bool pfb_dc_chan;
 
     //! This flag indicates whether we have all the channels from the last
@@ -126,6 +129,9 @@ namespace dsp
     //! From the parent InverseFilterbank
     bool pfb_all_chan;
 
+    //! The number of channels output by the analysis filter bank (per input channel)
+    unsigned pfb_nchan;
+ 
   private:
 
 

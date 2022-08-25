@@ -65,6 +65,10 @@ void dsp::Observation::init ()
   require_equal_rates = true;
 
   oversampling_factor = 1;
+
+  /* By default, assume that PFB output channels include DC */
+  pfb_dc_chan = true;
+  pfb_nchan = 0;
 }
 
 //! Set true if the data are dual sideband
@@ -428,6 +432,9 @@ const dsp::Observation& dsp::Observation::operator = (const Observation& in_obs)
   set_calfreq     ( in_obs.get_calfreq());
 
   set_oversampling_factor ( in_obs.get_oversampling_factor() );
+
+  set_pfb_dc_chan ( in_obs.get_pfb_dc_chan() );
+  set_pfb_nchan   ( in_obs.get_pfb_nchan() );
 
   return *this;
 }

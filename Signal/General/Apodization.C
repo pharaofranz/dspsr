@@ -17,6 +17,7 @@ dsp::Apodization::Apodization()
 {
   type = none;
   analytic = false;
+  swapped = false;
 
   zero_start = 0;
   zero_end = 0;
@@ -163,6 +164,18 @@ void dsp::Apodization::operate (float* indata, float* outdata) const
     {
       outdata[ipt] = indata[ipt] * buffer[ipt];
     }
+}
+
+void dsp::Apodization::swap ()
+{
+  if (swapped)
+    return;
+
+  unsigned ndat_2 = ndat/2;
+  for (int ipt=0; ipt<ndat_2; ipt++)
+    std::swap (buffer[ipt], buffer[ipt+ndat_2]);
+
+  swapped = true;
 }
 
 void dsp::Apodization::normalize()

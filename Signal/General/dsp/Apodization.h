@@ -77,6 +77,9 @@ namespace dsp {
     //! Multiply indata by the window function
     void operate (float* indata, float* outdata = 0) const;
 
+    //! Swap the two halves of the window
+    void swap ();
+
     //! Returns SUM i=1..N {window[i] * data[i]}
     double integrated_product (float* data, unsigned incr=1) const;
 
@@ -93,6 +96,9 @@ namespace dsp {
 
     //! If true, operate assumes that input and output are complex valued
     bool analytic;
+
+    //! If true, the two halves of the window have been swapped
+    bool swapped;
 
     //! Number of samples zeroed on the start
     unsigned zero_start;

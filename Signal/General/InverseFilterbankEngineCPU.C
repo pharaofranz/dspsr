@@ -54,9 +54,11 @@ void dsp::InverseFilterbankEngineCPU::setup (dsp::InverseFilterbank* filterbank)
   TimeSeries* output = filterbank->get_output();
 
   real_to_complex = (input->get_state() == Signal::Nyquist);
+  dual_sideband = input->get_dual_sideband();
 
-  pfb_dc_chan = filterbank->get_pfb_dc_chan();
+  pfb_dc_chan = input->get_pfb_dc_chan();
   pfb_all_chan = filterbank->get_pfb_all_chan();
+  pfb_nchan = input->get_pfb_nchan();
 
   input_nchan = input->get_nchan();
   output_nchan = output->get_nchan();
@@ -156,6 +158,7 @@ void dsp::InverseFilterbankEngineCPU::setup (dsp::InverseFilterbank* filterbank)
     cerr << "dsp::InverseFilterbankEngineCPU::setup"
       << " input_nchan=" << input_nchan
       << " output_nchan=" << output_nchan
+      << " pfb_nchan=" << pfb_nchan
       << " input_fft_length=" << input_fft_length
       << " output_fft_length=" << output_fft_length
       << " input_discard_pos=" << input_discard_pos
@@ -236,6 +239,23 @@ void dsp::InverseFilterbankEngineCPU::perform (
   const float* time_dom_ptr;
   float* output_freq_dom_ptr;
 
+  assert ( input_nchan % output_nchan == 0 );
+
+  unsigned input_per_output = input_nchan / output_nchan;
+
+  assert (input_per_output % pfb_nchan == 0);
+
+  unsigned coarse_channels_per_output_channel = 1;
+
+  if (input_per_output > pfb_nchan)
+  {
+    coarse_channels_per_output_channel = input_per_output / pfb_nchan;
+
+    if (verbose)
+      cerr << "dsp::InverseFilterbankEngineCPU::perform fine channels span " 
+           << coarse_channels_per_output_channel << " coarse channels" << endl;
+  }
+
   if (verbose)
   {
     if (pfb_dc_chan)
@@ -248,7 +268,7 @@ void dsp::InverseFilterbankEngineCPU::perform (
           << "moving first half channel to end of assembled spectrum and zeroing" << endl;
       
     }
-    else
+    else if (coarse_channels_per_output_channel == 1)
     {
       cerr << "dsp::InverseFilterbankEngineCPU::perform "
         << "leaving assembled spectrum as is" << endl;
@@ -294,6 +314,14 @@ void dsp::InverseFilterbankEngineCPU::perform (
   {
     for (unsigned ipol = 0; ipol < n_pol; ipol++)
     {
+
+#define TEST_PFB_ORDER 1
+#ifdef TEST_PFB_ORDER
+
+      ofstream test_pfb_out ("pfb_indeces.txt");
+
+#endif
+
       for (unsigned input_ichan = 0; input_ichan < input_nchan; input_ichan++)
       {
         freq_dom_ptr = input_fft_scratch;
@@ -301,10 +329,36 @@ void dsp::InverseFilterbankEngineCPU::perform (
         unsigned input_jchan = input_ichan;
 
         // shift by half band:
-        // input_jchan = (input_jchan + input_nchan) % input_nchan;
+        // input_jchan = (input_jchan + input_nchan/2) % input_nchan;
 
         // reverse channel order:
         // input_jchan = input_nchan - input_jchan - 1;
+
+        if (coarse_channels_per_output_channel > 1)
+        {
+           // re-order input channels in DSB monotonically
+           unsigned coarse_channel = input_ichan / pfb_nchan;
+           unsigned fine_channel = input_ichan % pfb_nchan;
+
+           unsigned output_channel = coarse_channel / coarse_channels_per_output_channel;
+           unsigned coarse_offset = coarse_channel % coarse_channels_per_output_channel;
+
+           // swap halves of the band within the output channel
+           coarse_offset = (coarse_offset + coarse_channels_per_output_channel/2) % coarse_channels_per_output_channel;
+
+           // swap halves of the band within the coarse channel
+           fine_channel = (fine_channel + pfb_nchan/2) % pfb_nchan;
+
+           input_jchan = (output_channel * coarse_channels_per_output_channel + coarse_offset) * pfb_nchan + fine_channel;
+
+#ifdef TEST_PFB_ORDER
+           test_pfb_out << input_ichan << " " 
+                        << coarse_channel << " " 
+                        << fine_channel << " "
+                        << input_jchan << endl;
+#endif
+
+        }
 
         time_dom_ptr = in->get_datptr(input_jchan, ipol);
         time_dom_ptr += n_dims*ipart*(input_fft_length - input_discard_total);

@@ -357,6 +357,8 @@ int main (int argc, char** argv) try {
     if (verbose)
       cerr << "data file " << filenames[ifile] << " opened" << endl;
 
+    plotter.title = filenames[ifile];
+
     if (bandwidth != 0)
     {
       cerr << "passband: over-riding bandwidth"

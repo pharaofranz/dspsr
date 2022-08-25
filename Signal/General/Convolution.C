@@ -236,6 +236,9 @@ void dsp::Convolution::prepare_spectral_apodization ( unsigned bc_nfft )
   spectral_apodization -> set_analytic( true );
   spectral_apodization -> build ();
 
+  if (input->get_dual_sideband())
+    spectral_apodization -> swap ();
+
   spectral_apodization -> dump ("spectral_taper.txt");
 
   if (spectral_apodization->get_ndat() != bc_nfft)

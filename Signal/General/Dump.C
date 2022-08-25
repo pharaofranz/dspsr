@@ -21,8 +21,7 @@ dsp::Dump::Dump (const char* name) : Sink<TimeSeries> (name)
 
 dsp::Dump::~Dump ()
 {
-  if (output)
-    cerr << "dsp::Dump::~Dump fptr=" << (FILE*) output << endl;
+  // if (output) cerr << "dsp::Dump::~Dump fptr=" << (FILE*) output << endl;
 }
 
 //! Set the ostream to which data will be dumped
@@ -111,7 +110,7 @@ void dsp::Dump::calculation ()
 #else
   for (unsigned i=0; i < 10; i++)
   {
-    fprintf (output, "%u %u %u %f", ichan, ipol, istart+i, data[i*ndim]);
+    fprintf (output, "%u %u %" PRIu64 " %f", ichan, ipol, istart+i, data[i*ndim]);
     for (unsigned j=1; j<ndim; j++)
       fprintf (output, " %f", data[i*ndim+j]);
     fprintf (output, "\n");

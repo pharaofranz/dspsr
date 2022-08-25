@@ -138,12 +138,6 @@ namespace dsp {
     //! Get oversampling_factor
     const Rational& get_oversampling_factor () { return oversampling_factor; }
 
-    //! Get the `pfb_dc_chan` flag
-    bool get_pfb_dc_chan () const { return pfb_dc_chan; }
-
-    //! Set the `pfb_dc_chan` flag
-    void set_pfb_dc_chan (bool _pfb_dc_chan) { pfb_dc_chan = _pfb_dc_chan; }
-
     //! Get the `pfb_all_chan` flag
     bool get_pfb_all_chan () const { return pfb_all_chan; }
 
@@ -234,10 +228,6 @@ namespace dsp {
     //! This will be 1/1 for critically sampled,
     //! and some number greater than 1 for over sampled case
     Rational oversampling_factor;
-
-
-    //! This flag indicates whether we have the DC, or zeroth PFB channel.
-    bool pfb_dc_chan;
 
     //! This flag indicates whether we have all the channels from the last
     //! stage of upstream channelization.

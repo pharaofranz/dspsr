@@ -38,7 +38,6 @@ dsp::InverseFilterbank::InverseFilterbank (const char* name, Behaviour behaviour
   output_discard_total = 0;
 
   pfb_all_chan = false;
-  pfb_dc_chan = false;
 }
 
 void dsp::InverseFilterbank::set_input (const dsp::TimeSeries* input)
@@ -173,14 +172,21 @@ void dsp::InverseFilterbank::make_preparations ()
 {
   Rational osf = oversampling_factor = input->get_oversampling_factor();
 
+  unsigned pfb_nchan = input->get_pfb_nchan ();
+
   if (verbose)
     cerr << "dsp::InverseFilterbank::make_preparations"
       << " oversampling_factor=" << get_oversampling_factor()
       << " input oversampling_factor=" << input->get_oversampling_factor()
-      << " pfb_dc_chan=" << get_pfb_dc_chan()
+      << " pfb_dc_chan=" << input->get_pfb_dc_chan()
+      << " pfb_nchan=" << input->get_pfb_nchan()
       << " pfb_all_chan=" << get_pfb_all_chan()
       << endl;
-  
+ 
+  if (pfb_nchan < 2)
+    throw Error (InvalidState, "dsp::InverseFilterbank::make_preparations",
+                 "input with pfb_nchan=%d", pfb_nchan);
+ 
   bool real_to_complex = (input->get_state() == Signal::Nyquist);
 
   /* number of input time samples per complex-valued output time sample
@@ -259,6 +265,8 @@ void dsp::InverseFilterbank::make_preparations ()
 
   if (verbose)
   {
+    cerr << "dsp::InverseFilterbank::make_preparations input_nchan/output_nchan=" 
+      << input_nchan/output_nchan << endl;
     cerr << "dsp::InverseFilterbank::make_preparations output_fft_length="
       << output_fft_length << endl;
     cerr << "dsp::InverseFilterbank::make_preparations input_fft_length="
@@ -279,6 +287,8 @@ void dsp::InverseFilterbank::make_preparations ()
     cerr << "dsp::InverseFilterbank::make_preparations freq_res="
       << freq_res << endl;
   }
+
+  assert (input_nchan % output_nchan == 0);
 
   if (has_temporal_apodization())
   {

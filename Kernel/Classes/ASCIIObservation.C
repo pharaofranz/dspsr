@@ -512,6 +512,18 @@ void dsp::ASCIIObservation::load (const char* header)
     }
   }
 
+  // //////////////////////////////////////////////////////////////////////
+  //
+  // PFB_NCHAN
+  //
+  int _pfb_nchan = 0;
+  if (ascii_header_check (header, "PFB_NCHAN", "%d", &_pfb_nchan) >= 0)
+  {
+    set_pfb_nchan (_pfb_nchan);
+    if (verbose)
+      std::cerr << "dsp::ASCIIObservation::load: pfb_nchan="
+        << get_pfb_nchan() << std::endl;
+  }
 }
 
 /* ***********************************************************************

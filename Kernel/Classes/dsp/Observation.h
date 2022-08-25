@@ -230,6 +230,10 @@ namespace dsp
 
     bool get_pfb_dc_chan () const { return pfb_dc_chan; }
 
+    //! set/get the number of channels output by the PFB per input channel
+    virtual void set_pfb_nchan (unsigned nchan) { pfb_nchan = nchan; }
+    unsigned get_pfb_nchan () const { return pfb_nchan; }
+
     //! Change the state and correct other attributes accordingly
     virtual void change_state (Signal::State new_state);
 
@@ -367,6 +371,15 @@ namespace dsp
 
     //! Do we have the DC, or zeroth PFB channel?
     bool pfb_dc_chan;
+
+    //! Number of channels output by PFB for a single input time series
+    /*! If two stages of analysis filter bank operations are performed,
+        pfb_nchan should be the number of fine channels per input coarse channel.
+
+        If only the fine channels that span the critically-sampled portion
+        of each coarse channel are kept, then pfb_nchan should be the number
+        of fine channels that are kept. */
+    unsigned pfb_nchan;
 
   private:
 
