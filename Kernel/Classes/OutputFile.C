@@ -66,7 +66,7 @@ void dsp::OutputFile::operation ()
 
 void dsp::OutputFile::open_file (const char* filename)
 {
-  int oflag = O_WRONLY | O_CREAT | O_TRUNC | O_EXCL;
+  int oflag = O_WRONLY | O_CREAT | O_TRUNC ; // | O_EXCL;
   mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP;
 
   fd = ::open (filename, oflag, mode);
